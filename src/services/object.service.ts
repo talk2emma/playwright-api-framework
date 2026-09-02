@@ -52,7 +52,7 @@ import type { UnknownRecord } from '../types';
  * and several of the seeded objects have `data: null`. Pinning it down would
  * be describing our fixtures rather than the API.
  */
-export const ObjectDataSchema = z.record(z.unknown()).nullable();
+const ObjectDataSchema = z.record(z.unknown()).nullable();
 
 /**
  * The shape common to every object response.
@@ -80,12 +80,12 @@ export const CreatedObjectSchema = objectBase.extend({
 });
 
 /** An update response: `PUT` and `PATCH` both carry `updatedAt`. */
-export const UpdatedObjectSchema = objectBase.extend({
+const UpdatedObjectSchema = objectBase.extend({
   updatedAt: z.number().int().positive(),
 });
 
 /** A list: `GET /objects`, optionally filtered by repeated `id` parameters. */
-export const ObjectListSchema = z.array(ApiObjectSchema);
+const ObjectListSchema = z.array(ApiObjectSchema);
 
 /** The delete acknowledgement. Note it is a body, not a 204. */
 export const DeleteAcknowledgementSchema = z.object({
@@ -103,9 +103,9 @@ export const ObjectErrorSchema = z.object({
   error: z.string().min(1),
 });
 
-export type ApiObject = z.infer<typeof ApiObjectSchema>;
-export type CreatedObject = z.infer<typeof CreatedObjectSchema>;
-export type UpdatedObject = z.infer<typeof UpdatedObjectSchema>;
+type ApiObject = z.infer<typeof ApiObjectSchema>;
+type CreatedObject = z.infer<typeof CreatedObjectSchema>;
+type UpdatedObject = z.infer<typeof UpdatedObjectSchema>;
 
 /**
  * Registered so `STRICT_CONTRACTS=true` validates these responses whether or
@@ -172,7 +172,7 @@ registerSchemas([
 /* ------------------------------------------------------------------ */
 
 /** What `create` and `replace` accept. */
-export interface NewObject {
+interface NewObject {
   readonly name: string;
   readonly data?: UnknownRecord | null;
 }

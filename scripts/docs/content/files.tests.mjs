@@ -347,7 +347,7 @@ expect(defects.uniqueItems).toBe(PostService.TOTAL_POSTS);`,
     changeWhen: ['Your API paginates differently — swap the walker.', 'The dataset size changes.'],
     changeHow: [
       {
-        text: 'For cursor pagination use `followCursor`; for offset/limit use `followOffset`. All three walkers take the same shape of callback.',
+        text: 'For `Link`-header pagination use `followLinkHeader`; for offset/limit use `followOffset`. Both walkers take the same shape of callback.',
       },
       {
         text: 'Assert the total from a constant, as `PostService.TOTAL_POSTS` does, so a change is one edit.',

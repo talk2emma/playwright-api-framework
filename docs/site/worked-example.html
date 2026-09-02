@@ -1200,7 +1200,7 @@ body.print details.api > summary {
     <nav aria-label="Documentation"><ul class="nav"><li><a href="index.html">Overview</a></li><li><a href="architecture.html">Architecture</a></li><li><a href="worked-example.html" aria-current="page">Worked example</a></li><li><a href="structure.html">Project structure</a></li><li><a href="reference-root.html">Reference: configuration &amp; tooling</a></li><li><a href="reference-foundation.html">Reference: config, core &amp; types</a></li><li><a href="reference-auth.html">Reference: authentication &amp; contracts</a></li><li><a href="reference-protocols.html">Reference: protocols, services &amp; fixtures</a></li><li><a href="reference-utils.html">Reference: utilities, stubbing &amp; reporting</a></li><li><a href="reference-tests.html">Reference: tests &amp; repository docs</a></li><li><a href="playbooks.html">Playbooks</a></li><li><a href="conventions.html">Conventions</a></li><li><a href="troubleshooting.html">Troubleshooting</a></li><li><a href="api-index.html">API index</a></li><li><a href="glossary.html">Glossary</a></li></ul></nav>
     <div class="sidebar-foot">
       <a href="playwright-api-framework-documentation.pdf" download>Download PDF</a>
-      <span>Generated 2026-09-01</span>
+      <span>Generated 2026-09-02</span>
     </div>
   </aside>
   <main id="main">
@@ -1331,12 +1331,12 @@ test.<span class="tok-f">beforeEach</span>(<span class="tok-k">async</span> ({ a
 <ol class="steps"><li><p>Add your environment to <code>src/config/environments.ts</code> — URLs, prefix, latency budget, read-only flag. No secrets.</p></li><li><p>Copy <code>src/services/object.service.ts</code>. Declare the schema first and infer the type from it, so the runtime check and the compile-time type cannot disagree.</p><pre><code><span class="tok-k">export</span> <span class="tok-k">const</span> <span class="tok-t">OrderSchema</span> <span class="tok-o">=</span> z.<span class="tok-t">object</span>({ <span class="tok-p">id</span><span class="tok-o">:</span> identifier, <span class="tok-p">status</span><span class="tok-o">:</span> z.<span class="tok-k">enum</span>([<span class="tok-s">'draft'</span>, <span class="tok-s">'paid'</span>]) });
 <span class="tok-k">export</span> <span class="tok-k">type</span> <span class="tok-t">Order</span> <span class="tok-o">=</span> z.<span class="tok-f">infer</span><span class="tok-o">&lt;</span><span class="tok-k">typeof</span> <span class="tok-t">OrderSchema</span><span class="tok-o">&gt;</span>;</code></pre></li><li><p>Register the schemas so the contract guard can find them from a real request.</p><pre><code><span class="tok-f">registerSchemas</span>([
   { <span class="tok-p">name</span><span class="tok-o">:</span> <span class="tok-s">'order'</span>, <span class="tok-p">method</span><span class="tok-o">:</span> <span class="tok-s">'GET'</span>, <span class="tok-p">pathPattern</span><span class="tok-o">:</span> <span class="tok-s">'/orders/{id}'</span>, <span class="tok-p">status</span><span class="tok-o">:</span> <span class="tok-s">'2xx'</span>, <span class="tok-p">schema</span><span class="tok-o">:</span> <span class="tok-t">OrderSchema</span> },
-]);</code></pre></li><li><p>Add the service to <code>src/services/index.ts</code> and to the <code>api</code> fixture — two lines, and every test can reach it.</p></li><li><p>Copy the shape of <code>objects.crud.spec.ts</code>: one composing lifecycle test, several focused ones. The lifecycle tells you *that* something broke; the focused tests tell you *what*.</p></li><li><p>If your API has a quota or is otherwise unreliable, model it in <code>src/mocks/</code> and run the same service against both.</p></li></ol></div>
+]);</code></pre></li><li><p>Add the service to the <code>api</code> fixture in <code>src/fixtures/api.fixture.ts</code> — one line, and every test can reach it.</p></li><li><p>Copy the shape of <code>objects.crud.spec.ts</code>: one composing lifecycle test, several focused ones. The lifecycle tells you *that* something broke; the focused tests tell you *what*.</p></li><li><p>If your API has a quota or is otherwise unreliable, model it in <code>src/mocks/</code> and run the same service against both.</p></li></ol></div>
     <footer class="page-foot">
       <div class="pager">
         <a class="prev" href="architecture.html">&larr; Architecture</a><a class="next" href="structure.html">Project structure &rarr;</a>
       </div>
-      <p>Generated from source by <code>npm run docs</code>. 104 files documented, 367 exports extracted.</p>
+      <p>Generated from source by <code>npm run docs</code>. 89 files documented, 150 exports extracted.</p>
     </footer>
   </main>
 </div>

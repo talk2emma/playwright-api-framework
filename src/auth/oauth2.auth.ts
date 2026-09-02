@@ -30,7 +30,7 @@ interface TokenResponse {
   error_description?: string;
 }
 
-export interface OAuth2Options {
+interface OAuth2Options {
   /** Absolute token endpoint. Defaults to `OAUTH_TOKEN_URL`. */
   readonly tokenUrl?: string;
   readonly clientId?: string;

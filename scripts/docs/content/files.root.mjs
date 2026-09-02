@@ -489,7 +489,7 @@ rules: { 'no-empty-pattern': 'off' },`,
       'Ignoring a file does not remove it from history. If a secret was committed, rotate it — deletion does not help.',
       'The `!.env.example` negation must come after the `.env*` pattern, or the template is ignored too.',
     ],
-    related: ['.env.example', 'src/auth/token.store.ts', 'src/auth/session.auth.ts'],
+    related: ['.env.example', 'src/auth/token.store.ts'],
   },
 
   '.prettierrc.json': {

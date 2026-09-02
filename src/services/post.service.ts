@@ -45,7 +45,7 @@ export const PostSchema = z
 
 export const PostListSchema = z.array(PostSchema);
 
-export type Post = z.infer<typeof PostSchema>;
+type Post = z.infer<typeof PostSchema>;
 
 registerSchemas([
   { name: 'post', method: 'GET', pathPattern: '/posts/{id}', status: 200, schema: PostSchema },

@@ -16,7 +16,7 @@ import { config } from '../config/env.config';
 import { logger } from '../utils/logger';
 
 /** A received frame with the moment it arrived. */
-export interface SocketMessage {
+interface SocketMessage {
   readonly data: string;
   readonly receivedAt: number;
 }

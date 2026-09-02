@@ -16,7 +16,7 @@ import { logger } from './logger';
 import type { Logger } from './logger';
 
 /** One registered undo action. */
-export interface CleanupEntry {
+interface CleanupEntry {
   /** Human-readable name used in logs, e.g. `order 4821`. */
   readonly description: string;
   /** Runs the deletion. Errors are caught and logged. */

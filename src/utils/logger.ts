@@ -9,7 +9,7 @@
  */
 import { config } from '../config/env.config';
 
-export type LogLevel = 'error' | 'warn' | 'info' | 'debug';
+type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
 const ORDER: Record<LogLevel, number> = { error: 0, warn: 1, info: 2, debug: 3 };
 
@@ -26,9 +26,9 @@ const COLOR: Record<LogLevel | 'dim' | 'reset', string> = {
 };
 
 /** Extra key/value pairs attached to a log line. */
-export type LogContext = Record<string, unknown>;
+type LogContext = Record<string, unknown>;
 
-export interface LoggerOptions {
+interface LoggerOptions {
   /** Prefix identifying the subsystem, e.g. `http` or `auth:oauth2`. */
   readonly scope?: string;
   /** Overrides the level from `LOG_LEVEL` — used to silence a noisy helper. */

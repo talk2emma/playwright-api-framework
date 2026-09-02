@@ -1200,7 +1200,7 @@ body.print details.api > summary {
     <nav aria-label="Documentation"><ul class="nav"><li><a href="index.html">Overview</a></li><li><a href="architecture.html">Architecture</a></li><li><a href="worked-example.html">Worked example</a></li><li><a href="structure.html">Project structure</a></li><li><a href="reference-root.html">Reference: configuration &amp; tooling</a></li><li><a href="reference-foundation.html">Reference: config, core &amp; types</a></li><li><a href="reference-auth.html">Reference: authentication &amp; contracts</a></li><li><a href="reference-protocols.html">Reference: protocols, services &amp; fixtures</a></li><li><a href="reference-utils.html">Reference: utilities, stubbing &amp; reporting</a></li><li><a href="reference-tests.html">Reference: tests &amp; repository docs</a></li><li><a href="playbooks.html" aria-current="page">Playbooks</a></li><li><a href="conventions.html">Conventions</a></li><li><a href="troubleshooting.html">Troubleshooting</a></li><li><a href="api-index.html">API index</a></li><li><a href="glossary.html">Glossary</a></li></ul></nav>
     <div class="sidebar-foot">
       <a href="playwright-api-framework-documentation.pdf" download>Download PDF</a>
-      <span>Generated 2026-09-01</span>
+      <span>Generated 2026-09-02</span>
     </div>
   </aside>
   <main id="main">
@@ -1234,7 +1234,7 @@ body.print details.api > summary {
 
 <span class="tok-k">export</span> <span class="tok-k">type</span> <span class="tok-t">Order</span> <span class="tok-o">=</span> z.<span class="tok-f">infer</span><span class="tok-o">&lt;</span><span class="tok-k">typeof</span> <span class="tok-t">OrderSchema</span><span class="tok-o">&gt;</span>;</code></pre></li><li><p><strong>Establish what the API really does by calling it</strong>, not by reading its documentation. Every quirk in the reference service — a 200 where 201 was expected, timestamps on some responses and not others, a non-standard error shape — was found that way, and each would have broken a schema copied from a specification.</p></li><li><p>Register the schemas so the contract guard can find them from a real request.</p><pre><code><span class="tok-f">registerSchemas</span>([
   { <span class="tok-p">name</span><span class="tok-o">:</span> <span class="tok-s">'order'</span>, <span class="tok-p">method</span><span class="tok-o">:</span> <span class="tok-s">'GET'</span>, <span class="tok-p">pathPattern</span><span class="tok-o">:</span> <span class="tok-s">'/orders/{id}'</span>, <span class="tok-p">status</span><span class="tok-o">:</span> <span class="tok-s">'2xx'</span>, <span class="tok-p">schema</span><span class="tok-o">:</span> <span class="tok-t">OrderSchema</span> },
-]);</code></pre></li><li><p>Add the service to <code>src/services/index.ts</code> and to the <code>api</code> fixture — two lines, and every test can reach it.</p></li><li><p>Copy the shape of <code>tests/api/objects.crud.spec.ts</code>: one composing lifecycle test, several focused ones.</p></li></ol>
+]);</code></pre></li><li><p>Add the service to the <code>api</code> fixture in <code>src/fixtures/api.fixture.ts</code> — one line, and every test can reach it.</p></li><li><p>Copy the shape of <code>tests/api/objects.crud.spec.ts</code>: one composing lifecycle test, several focused ones.</p></li></ol>
 <p><strong>Why that shape:</strong> the lifecycle test proves the operations compose and tells you *that* something broke; the focused tests each assert one behaviour and tell you *what*. Either alone leaves a real gap.</p>
 <h2 id="model-an-api-you-cannot-call-freely">Model an API you cannot call freely</h2>
 <p><strong>Where:</strong> a new module in <code>src/mocks/</code>, following <code>objects.stub.ts</code>. Worth doing whenever the real dependency is rate-limited, shared, flaky, or simply down half the time.</p>
@@ -1280,11 +1280,11 @@ body.print details.api > summary {
   <span class="tok-k">protected</span> <span class="tok-k">readonly</span> basePath <span class="tok-o">=</span> <span class="tok-s">'/orders'</span>;
 
   <span class="tok-k">async</span> <span class="tok-f">create</span>(<span class="tok-p">overrides</span><span class="tok-o">:</span> <span class="tok-f">Partial</span><span class="tok-o">&lt;</span><span class="tok-t">Order</span><span class="tok-o">&gt;</span> <span class="tok-o">=</span> {})<span class="tok-o">:</span> <span class="tok-f">Promise</span><span class="tok-o">&lt;</span><span class="tok-t">Order</span><span class="tok-o">&gt;</span> {
-    <span class="tok-k">const</span> response <span class="tok-o">=</span> <span class="tok-k">await</span> <span class="tok-k">this</span>.<span class="tok-f">post</span>().<span class="tok-f">json</span>(<span class="tok-f">buildOrder</span>(overrides)).<span class="tok-f">expectStatus</span>(<span class="tok-n">201</span>).<span class="tok-f">send</span>();
+    <span class="tok-k">const</span> response <span class="tok-o">=</span> <span class="tok-k">await</span> <span class="tok-k">this</span>.<span class="tok-f">post</span>().<span class="tok-f">json</span>(<span class="tok-f">buildInvoice</span>(faker, overrides)).<span class="tok-f">expectStatus</span>(<span class="tok-n">201</span>).<span class="tok-f">send</span>();
     <span class="tok-k">const</span> order <span class="tok-o">=</span> response.<span class="tok-f">parse</span>(<span class="tok-t">OrderSchema</span>, <span class="tok-s">'order'</span>);
     <span class="tok-k">return</span> <span class="tok-k">this</span>.<span class="tok-f">track</span>(order, <span class="tok-s">`order </span><span class="tok-o">${</span>order.id<span class="tok-o">}</span><span class="tok-s">`</span>, () <span class="tok-o">=&gt;</span> <span class="tok-k">this</span>.<span class="tok-f">remove</span>(order.id));
   }
-}</code></pre></li><li><p>Export it from <code>src/services/index.ts</code> and add it to the <code>api</code> fixture, which makes it available to every test.</p><pre><code><span class="tok-p">api</span><span class="tok-o">:</span> <span class="tok-k">async</span> ({ http, cleanup, log }, use) <span class="tok-o">=&gt;</span> {
+}</code></pre></li><li><p>Add it to the <code>api</code> fixture in <code>src/fixtures/api.fixture.ts</code>, which makes it available to every test.</p><pre><code><span class="tok-p">api</span><span class="tok-o">:</span> <span class="tok-k">async</span> ({ http, cleanup, log }, use) <span class="tok-o">=&gt;</span> {
   <span class="tok-k">await</span> <span class="tok-f">use</span>({
     <span class="tok-p">users</span><span class="tok-o">:</span> <span class="tok-k">new</span> <span class="tok-f">UserService</span>(http, { cleanup, <span class="tok-p">logger</span><span class="tok-o">:</span> log.<span class="tok-f">child</span>(<span class="tok-s">'users'</span>) }),
     <span class="tok-p">orders</span><span class="tok-o">:</span> <span class="tok-k">new</span> <span class="tok-f">OrderService</span>(http, { cleanup, <span class="tok-p">logger</span><span class="tok-o">:</span> log.<span class="tok-f">child</span>(<span class="tok-s">'orders'</span>) }),
@@ -1304,7 +1304,7 @@ body.print details.api > summary {
     <span class="tok-k">this</span>.cached <span class="tok-o">=</span> <span class="tok-k">undefined</span>;
   }
 }</code></pre></figure>
-<p>Export it from <code>src/auth/index.ts</code>, and if it should be chosen automatically, add it to <code>defaultAuthProvider</code> in <code>src/fixtures/api.fixture.ts</code> — the order in that function is the precedence.</p>
+<p>If it should be chosen automatically, add it to <code>defaultAuthProvider</code> in <code>src/fixtures/api.fixture.ts</code> — the order in that function is the precedence.</p>
 <p><strong>Why there:</strong> <code>headers()</code> is called per request rather than once, which is what allows a provider to refresh a token transparently. Anything that needs the request itself — request signing — is a signer rather than a provider; see <code>HmacSigner</code>.</p>
 <h2 id="add-a-custom-assertion">Add a custom assertion</h2>
 <p>Two homes, and the choice matters.</p>
@@ -1335,12 +1335,14 @@ body.print details.api > summary {
 });</code></pre></figure>
 <p><strong>Why there:</strong> the stub proves the client really recovers, because the endpoint really does. A mocked-out client that always succeeds proves nothing at all.</p>
 <h2 id="make-a-test-wait-for-eventual-consistency">Make a test wait for eventual consistency</h2>
-<p><strong>Where:</strong> <code>waitFor</code> from <code>src/utils/retry.utils.ts</code>. Never a sleep.</p>
-<figure class="code" data-lang="ts"><figcaption><span>Poll for the thing you are actually waiting for</span><span class="lang">TypeScript</span></figcaption><pre><code><span class="tok-k">const</span> order <span class="tok-o">=</span> <span class="tok-k">await</span> <span class="tok-f">waitFor</span>(() <span class="tok-o">=&gt;</span> api.orders.<span class="tok-f">find</span>(id), {
-  <span class="tok-p">description</span><span class="tok-o">:</span> <span class="tok-s">`order </span><span class="tok-o">${</span>id<span class="tok-o">}</span><span class="tok-s"> to appear in the index`</span>,
-  <span class="tok-p">timeout</span><span class="tok-o">:</span> <span class="tok-t">TIMEOUTS</span>.<span class="tok-t">POLL_TIMEOUT</span>,
-});</code></pre></figure>
-<aside class="callout rule"><span class="callout-tag">Rule</span><div>A fixed sleep is too short on a slow day and too long on every other day, and it hides the fact that the wait exists at all. <code>waitFor</code> states the condition, fails with a message naming it, and returns the value it was waiting for.</div></aside>
+<p><strong>Where:</strong> Playwright's <code>expect.poll()</code>. Never a sleep.</p>
+<figure class="code" data-lang="ts"><figcaption><span>Poll for the thing you are actually waiting for</span><span class="lang">TypeScript</span></figcaption><pre><code><span class="tok-k">await</span> expect
+  .<span class="tok-f">poll</span>(() <span class="tok-o">=&gt;</span> api.orders.<span class="tok-f">find</span>(id), {
+    <span class="tok-p">message</span><span class="tok-o">:</span> <span class="tok-s">`order </span><span class="tok-o">${</span>id<span class="tok-o">}</span><span class="tok-s"> never appeared in the index`</span>,
+    <span class="tok-p">timeout</span><span class="tok-o">:</span> <span class="tok-t">TIMEOUTS</span>.<span class="tok-t">POLL_TIMEOUT</span>,
+  })
+  .<span class="tok-f">toBeDefined</span>();</code></pre></figure>
+<aside class="callout rule"><span class="callout-tag">Rule</span><div>A fixed sleep is too short on a slow day and too long on every other day, and it hides the fact that the wait exists at all. <code>expect.poll()</code> states the condition, retries it until the assertion passes, and fails with a message naming what never happened.</div></aside>
 <h2 id="change-a-timeout">Change a timeout</h2>
 <p><strong>Where:</strong> <code>src/config/timeouts.ts</code> for a budget the whole suite shares; <code>.timeout(ms)</code> on the builder for one request.</p>
 <p><strong>Why there:</strong> named budgets mean a slow environment is retuned in one edit, and every number in the suite carries an explanation of what it is waiting for. A raw <code>30000</code> in a test tells the next reader nothing.</p>
@@ -1443,7 +1445,7 @@ npx playwright show<span class="tok-o">-</span>trace test<span class="tok-o">-</
       <div class="pager">
         <a class="prev" href="reference-tests.html">&larr; Reference: tests &amp; repository docs</a><a class="next" href="conventions.html">Conventions &rarr;</a>
       </div>
-      <p>Generated from source by <code>npm run docs</code>. 104 files documented, 367 exports extracted.</p>
+      <p>Generated from source by <code>npm run docs</code>. 89 files documented, 150 exports extracted.</p>
     </footer>
   </main>
 </div>

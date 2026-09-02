@@ -13,7 +13,7 @@
 import type { z } from 'zod';
 import type { HttpMethod } from '../types';
 
-export interface RegisteredSchema {
+interface RegisteredSchema {
   readonly name: string;
   readonly method: HttpMethod;
   /** Path pattern with `{param}` placeholders, matched against the real path. */
@@ -26,23 +26,13 @@ export interface RegisteredSchema {
 const registry: RegisteredSchema[] = [];
 
 /** Registers a response schema. Call at module scope in `src/contracts`. */
-export function registerSchema(entry: RegisteredSchema): void {
+function registerSchema(entry: RegisteredSchema): void {
   registry.push(entry);
 }
 
 /** Registers many at once — the usual form for a service's contract file. */
 export function registerSchemas(entries: RegisteredSchema[]): void {
   for (const entry of entries) registerSchema(entry);
-}
-
-/** Everything registered, for coverage reporting. */
-export function allSchemas(): readonly RegisteredSchema[] {
-  return [...registry];
-}
-
-/** Removes every registration. Only for the framework's own tests. */
-export function clearSchemas(): void {
-  registry.length = 0;
 }
 
 /** The schema for a request/status pair, or `undefined` when none is registered. */
@@ -58,11 +48,6 @@ export function findSchema(
       matchesStatus(entry.status, status) &&
       matchesPath(entry.pathPattern, pathname),
   );
-}
-
-/** By name, for a test that wants to reuse a schema explicitly. */
-export function schemaByName(name: string): z.ZodTypeAny | undefined {
-  return registry.find((entry) => entry.name === name)?.schema;
 }
 
 /* ------------------------------------------------------------------ */

@@ -7,10 +7,10 @@
  * different owners. Each message is written to be actionable on its own,
  * because in CI the message is often all anyone sees.
  */
-import type { ExchangeRecord, HttpMethod } from '../types';
+import type { HttpMethod } from '../types';
 
 /** Base class, so `catch (e) { if (e instanceof FrameworkError) ... }` works. */
-export class FrameworkError extends Error {
+class FrameworkError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, options);
     this.name = new.target.name;
@@ -133,17 +133,6 @@ export class ReadOnlyEnvironmentError extends FrameworkError {
       `Refusing to send ${method} ${url}: the "${environment}" environment is marked ` +
         `read-only in src/config/environments.ts. Point TEST_ENV at a writable ` +
         `environment, or mark the test @read-only.`,
-    );
-  }
-}
-
-/** A response was slower than the configured latency budget. */
-export class LatencyBudgetError extends FrameworkError {
-  constructor(record: ExchangeRecord, budgetMs: number) {
-    super(
-      `${record.method} ${record.url} took ${record.timing.durationMs}ms, over the ` +
-        `${budgetMs}ms budget. Raise LATENCY_BUDGET_MS, or the environment's ` +
-        `latencyBudgetMs, if this is expected.`,
     );
   }
 }

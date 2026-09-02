@@ -17,12 +17,12 @@ export const MUTATING_METHODS: readonly HttpMethod[] = ['POST', 'PUT', 'PATCH', 
 /* JSON                                                                */
 /* ------------------------------------------------------------------ */
 
-export type JsonPrimitive = string | number | boolean | null;
-export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
-export interface JsonObject {
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonObject | JsonArray;
+interface JsonObject {
   [key: string]: JsonValue;
 }
-export type JsonArray = JsonValue[];
+type JsonArray = JsonValue[];
 
 /* ------------------------------------------------------------------ */
 /* Request pieces                                                      */
@@ -125,21 +125,6 @@ export interface ValidationResult {
   /** The parsed and, where the validator narrows types, coerced value. */
   readonly value?: unknown;
 }
-
-/** A page of results plus whatever the API uses to reach the next one. */
-export interface Page<T> {
-  readonly items: T[];
-  readonly nextCursor?: string;
-  readonly nextUrl?: string;
-  readonly total?: number;
-  readonly pageNumber?: number;
-}
-
-/** Anything with a `.then` — used where a helper accepts sync or async work. */
-export type Awaitable<T> = T | Promise<T>;
-
-/** Makes selected keys optional; used for factory overrides. */
-export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 /** A plain object with unknown values — safer than `any` for parsed payloads. */
 export type UnknownRecord = Record<string, unknown>;

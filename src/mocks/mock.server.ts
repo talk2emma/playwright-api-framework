@@ -14,7 +14,7 @@
 import http from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import type { HeaderMap, HttpMethod, UnknownRecord } from '../types';
+import type { HeaderMap, HttpMethod } from '../types';
 import { config } from '../config/env.config';
 import { logger } from '../utils/logger';
 
@@ -269,7 +269,7 @@ async function record(request: IncomingMessage): Promise<RecordedRequest> {
  * remaining, including slashes. Everything else is escaped, so a path
  * containing a dot or a bracket cannot accidentally act as a pattern.
  */
-export function matchPath(pattern: string, pathname: string): boolean {
+function matchPath(pattern: string, pathname: string): boolean {
   if (pattern === pathname) return true;
   /* Split on the wildcards so each piece is classified exactly once; everything
    * that is not a wildcard is escaped, so a path containing a dot or a bracket
@@ -299,9 +299,4 @@ export function stubFromRecording(entry: {
     headers: entry.headers ?? {},
   };
   return { method: entry.method, path: entry.path, respond: response, name: 'recorded' };
-}
-
-/** The parsed JSON body of a recorded request, typed by the caller. */
-export function bodyOf(request: RecordedRequest): UnknownRecord {
-  return (request.json ?? {}) as UnknownRecord;
 }

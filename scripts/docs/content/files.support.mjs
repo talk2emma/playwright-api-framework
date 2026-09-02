@@ -248,16 +248,6 @@ for (const stub of ExchangeRecorder.toStubs(recording)) mockServer.stub(stub);`,
       'src/fixtures/api.fixture.ts',
     ],
   },
-
-  'src/mocks/index.ts': {
-    group: 'mocks',
-    purpose: 'Barrel for the stubbing and recording layer.',
-    changeWhen: ['You add a stubbing capability.'],
-    changeHow: [{ text: 'Re-export it.' }],
-    why: 'Keeps the stub server and the recorder discoverable together — they are designed to be used as a pair.',
-    related: ['src/mocks/mock.server.ts'],
-  },
-
   /* ---------------------------------------------------------------- */
   /* src/reporters                                                     */
   /* ---------------------------------------------------------------- */
@@ -323,22 +313,6 @@ for (const stub of ExchangeRecorder.toStubs(recording)) mockServer.stub(stub);`,
     ],
     related: ['playwright.config.ts', '.github/workflows/api-tests.yml'],
   },
-
-  'src/reporters/index.ts': {
-    group: 'reporters',
-    purpose: 'Barrel for custom reporters.',
-    blocks: [
-      {
-        type: 'note',
-        text: 'Playwright loads a custom reporter by **path**, not through this barrel — `playwright.config.ts` references `./src/reporters/summary.reporter.ts` directly. The barrel exists so other code can import the class, for example to test it.',
-      },
-    ],
-    changeWhen: ['You add a reporter.'],
-    changeHow: [{ text: 'Export it here, and register it by path in `playwright.config.ts`.' }],
-    why: 'The path reference is a Playwright requirement, not a style choice; the barrel keeps the module importable like anything else.',
-    related: ['playwright.config.ts', 'src/reporters/summary.reporter.ts'],
-  },
-
   /* ---------------------------------------------------------------- */
   /* src/data                                                          */
   /* ---------------------------------------------------------------- */
@@ -352,11 +326,8 @@ for (const stub of ExchangeRecorder.toStubs(recording)) mockServer.stub(stub);`,
         type: 'table',
         head: ['Belongs here', 'Does not'],
         rows: [
-          ['Static reference tables', 'Anything generated per run — use `data.utils.ts`'],
-          [
-            'A small real file for upload tests',
-            'Anything large — generate it with `tempFileOfSize`',
-          ],
+          ['A file some test actually reads', 'Anything generated per run — use `data.utils.ts`'],
+          ['A small real file, when a test reads it', 'Anything large — generate it at run time'],
           [
             'The expected shape of an error',
             'Anything secret — credentials come from the environment',
@@ -368,89 +339,16 @@ for (const stub of ExchangeRecorder.toStubs(recording)) mockServer.stub(stub);`,
     changeWhen: ['You add a data file.'],
     changeHow: [
       {
-        text: 'Add the file, in the smallest format that works — CSV beats JSON for a table a non-engineer will edit.',
+        text: 'Add the file in the same change as the test that reads it, in the smallest format that works — CSV beats JSON for a table a non-engineer will edit.',
       },
-      { text: 'Add a row to the table in the README.' },
-      { text: "Read it through `dataFile('name.csv')` rather than a relative path." },
+      { text: 'Add a row to the table in the README, naming what reads it.' },
+      {
+        text: 'Resolve it through `fromRoot` rather than a relative path, so the suite works from any working directory.',
+      },
     ],
     why: 'A folder of unexplained data files becomes a folder nobody dares delete from. One table saying what each file is for keeps it maintainable.',
     related: ['src/utils/file.utils.ts', 'src/contracts/openapi.ts'],
   },
-
-  'src/data/users.json': {
-    group: 'data',
-    purpose:
-      'Role names and the seed accounts an environment is expected to contain. Reference data, not credentials — there are no passwords here.',
-    changeWhen: ['The role list changes.', 'The seeded accounts an environment provides change.'],
-    changeHow: [
-      {
-        text: 'Edit the file, and keep it in step with `UserRole` in `env.config.ts`. The two describe the same set from different angles.',
-      },
-    ],
-    why: 'Tests that need "an account that already exists" should read it from one place rather than each hard-coding an address.',
-    gotchas: [
-      'This file is committed. Never add a password to it — credentials come from the environment through `getUser(role)`.',
-    ],
-    related: ['src/config/env.config.ts', 'src/utils/file.utils.ts'],
-  },
-
-  'src/data/status-codes.csv': {
-    group: 'data',
-    purpose:
-      'A table-driven matrix of malformed requests and the status each must produce — the negative-path suite as data rather than as code.',
-    blocks: [
-      {
-        type: 'code',
-        caption: 'One test, every row',
-        text: `for (const testCase of readCsv<Case>(dataFile('status-codes.csv'))) {
-  test(\`\${testCase.scenario} @regression\`, async ({ http }) => {
-    const response = await http
-      .request(testCase.method, testCase.path)
-      .json(testCase.payload ? JSON.parse(testCase.payload) : undefined)
-      .send();
-    expect(response).toHaveStatus(Number(testCase.expectedStatus));
-  });
-}`,
-      },
-      {
-        type: 'p',
-        text: 'The `note` column exists so a row explains itself. A case table whose rows have no rationale is a table nobody can safely change.',
-      },
-    ],
-    changeWhen: [
-      'A new malformed-input case is worth covering.',
-      "The API's error semantics change.",
-    ],
-    changeHow: [
-      { text: 'Add a row. No code change — that is the point of driving the suite from data.' },
-      { text: 'Keep the `note` column filled in.' },
-    ],
-    why: 'CSV means somebody who is not an engineer can add a case. The error-handling matrix is exactly the sort of thing a product owner or a support engineer knows more about than the test author.',
-    gotchas: [
-      'Every value is read as a string; convert explicitly.',
-      'A payload containing a comma needs quoting, as CSV requires.',
-    ],
-    related: ['src/utils/file.utils.ts', 'src/contracts/schemas.ts'],
-  },
-
-  'src/data/files/upload-sample.txt': {
-    group: 'data',
-    purpose:
-      'A small real file for multipart upload tests, so they exercise a real file handle rather than a synthetic buffer.',
-    changeWhen: [
-      'A test needs a file of a specific type — add another file rather than changing this one.',
-    ],
-    changeHow: [
-      { text: 'Add the file here for a small fixed sample.' },
-      {
-        text: 'For anything large, generate it instead — a multi-megabyte fixture slows every clone forever.',
-        code: `const big = tempFileOfSize('large.bin', 50 * 1024 * 1024);`,
-      },
-    ],
-    why: 'Reading a real file catches a class of problem a buffer does not: path handling, MIME-type guessing from the extension, and the file name the server actually receives.',
-    related: ['src/utils/file.utils.ts', 'src/core/request.builder.ts'],
-  },
-
   /* ---------------------------------------------------------------- */
   /* tests                                                             */
   /* ---------------------------------------------------------------- */

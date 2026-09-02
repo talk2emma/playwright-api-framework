@@ -6,7 +6,7 @@
 import { highlight, detectLanguage, LANGUAGE_LABEL } from './highlight.mjs';
 
 /** Renders a syntax-highlighted code block with its language labelled. */
-export function codeBlock(text, { caption, lang } = {}) {
+function codeBlock(text, { caption, lang } = {}) {
   const language = lang ?? detectLanguage(text);
   const label = LANGUAGE_LABEL[language] ?? language;
   return (
@@ -32,7 +32,7 @@ export function inline(text = '') {
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 }
 
-export function renderBlock(block) {
+function renderBlock(block) {
   switch (block.type) {
     case 'h2':
       return `<h2 id="${slug(block.text)}">${inline(block.text)}</h2>`;
@@ -90,7 +90,7 @@ export function fileAnchor(filePath) {
 }
 
 /** Renders the auto-extracted API surface of one source file. */
-export function renderApi(entry) {
+function renderApi(entry) {
   if (!entry || !entry.exports?.length) return '';
   const parts = [];
   for (const item of entry.exports) {

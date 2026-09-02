@@ -446,7 +446,7 @@ const checksum = createHash('sha256').update(response.buffer()).digest('hex');`,
       '**No load testing.** Latency percentiles from a functional suite are useful signal; pretending they are a load test is not. Use a tool built for it.',
       "**No JWT signature verification.** Verifying needs the issuer's key and is the API's job. The suite decodes claims — it never treats a decoded token as trusted.",
       "**No external `$ref` resolution in OpenAPI.** Bundle the specification with your own tooling first; a second resolver that behaves slightly differently from the team's is worse than none.",
-      '**No authorisation-code OAuth flow.** It needs a browser. The UI suite can perform it and hand the resulting token to `BearerAuth`.',
+      '**No authorisation-code OAuth flow.** It needs a browser. The UI suite can perform it and hand the resulting token to `.bearer(token)` on the request builder.',
       '**No assertion retrying.** `retry()` exists for genuinely transient work. Retrying until an assertion passes is how a real defect gets shipped.',
     ],
   },
@@ -806,7 +806,7 @@ export type Order = z.infer<typeof OrderSchema>;`,
 ]);`,
       },
       {
-        text: 'Add the service to `src/services/index.ts` and to the `api` fixture — two lines, and every test can reach it.',
+        text: 'Add the service to the `api` fixture in `src/fixtures/api.fixture.ts` — one line, and every test can reach it.',
       },
       {
         text: 'Copy the shape of `objects.crud.spec.ts`: one composing lifecycle test, several focused ones. The lifecycle tells you *that* something broke; the focused tests tell you *what*.',
@@ -867,7 +867,7 @@ npx playwright test --grep @live          # deliberately spend quota`,
         code: `registerSchemas([\n  { name: 'order', method: 'GET', pathPattern: '/orders/{id}', status: '2xx', schema: OrderSchema },\n]);`,
       },
       {
-        text: 'Add the service to `src/services/index.ts` and to the `api` fixture — two lines, and every test can reach it.',
+        text: 'Add the service to the `api` fixture in `src/fixtures/api.fixture.ts` — one line, and every test can reach it.',
       },
       {
         text: 'Copy the shape of `tests/api/objects.crud.spec.ts`: one composing lifecycle test, several focused ones.',
@@ -975,10 +975,10 @@ const orders = new OrderService(http.withBaseUrl(mockServer.url), { cleanup });`
       },
       {
         text: 'Set `basePath` and write intention-revealing methods. A creation registers its own cleanup in the same statement.',
-        code: `export class OrderService extends BaseService {\n  protected readonly basePath = '/orders';\n\n  async create(overrides: Partial<Order> = {}): Promise<Order> {\n    const response = await this.post().json(buildOrder(overrides)).expectStatus(201).send();\n    const order = response.parse(OrderSchema, 'order');\n    return this.track(order, \`order \${order.id}\`, () => this.remove(order.id));\n  }\n}`,
+        code: `export class OrderService extends BaseService {\n  protected readonly basePath = '/orders';\n\n  async create(overrides: Partial<Order> = {}): Promise<Order> {\n    const response = await this.post().json(buildInvoice(faker, overrides)).expectStatus(201).send();\n    const order = response.parse(OrderSchema, 'order');\n    return this.track(order, \`order \${order.id}\`, () => this.remove(order.id));\n  }\n}`,
       },
       {
-        text: 'Export it from `src/services/index.ts` and add it to the `api` fixture, which makes it available to every test.',
+        text: 'Add it to the `api` fixture in `src/fixtures/api.fixture.ts`, which makes it available to every test.',
         code: `api: async ({ http, cleanup, log }, use) => {\n  await use({\n    users: new UserService(http, { cleanup, logger: log.child('users') }),\n    orders: new OrderService(http, { cleanup, logger: log.child('orders') }),\n  });\n},`,
       },
     ],
@@ -1007,7 +1007,7 @@ const orders = new OrderService(http.withBaseUrl(mockServer.url), { cleanup });`
   },
   {
     type: 'p',
-    text: 'Export it from `src/auth/index.ts`, and if it should be chosen automatically, add it to `defaultAuthProvider` in `src/fixtures/api.fixture.ts` — the order in that function is the precedence.',
+    text: 'If it should be chosen automatically, add it to `defaultAuthProvider` in `src/fixtures/api.fixture.ts` — the order in that function is the precedence.',
   },
   {
     type: 'p',
@@ -1072,18 +1072,20 @@ const orders = new OrderService(http.withBaseUrl(mockServer.url), { cleanup });`
   },
 
   { type: 'h2', text: 'Make a test wait for eventual consistency' },
-  { type: 'p', text: '**Where:** `waitFor` from `src/utils/retry.utils.ts`. Never a sleep.' },
+  { type: 'p', text: "**Where:** Playwright's `expect.poll()`. Never a sleep." },
   {
     type: 'code',
     caption: 'Poll for the thing you are actually waiting for',
-    text: `const order = await waitFor(() => api.orders.find(id), {
-  description: \`order \${id} to appear in the index\`,
-  timeout: TIMEOUTS.POLL_TIMEOUT,
-});`,
+    text: `await expect
+  .poll(() => api.orders.find(id), {
+    message: \`order \${id} never appeared in the index\`,
+    timeout: TIMEOUTS.POLL_TIMEOUT,
+  })
+  .toBeDefined();`,
   },
   {
     type: 'rule',
-    text: 'A fixed sleep is too short on a slow day and too long on every other day, and it hides the fact that the wait exists at all. `waitFor` states the condition, fails with a message naming it, and returns the value it was waiting for.',
+    text: 'A fixed sleep is too short on a slow day and too long on every other day, and it hides the fact that the wait exists at all. `expect.poll()` states the condition, retries it until the assertion passes, and fails with a message naming what never happened.',
   },
 
   { type: 'h2', text: 'Change a timeout' },
@@ -1495,12 +1497,12 @@ test.describe('user creation', () => {
       ],
       [
         'A hard-coded `test@example.com`',
-        '`uniqueEmail()`',
+        '`uniqueId()`',
         'Survives a uniqueness constraint and a second run',
       ],
       [
         'Asserting on page one of a list',
-        '`followOffset` / `followCursor`',
+        '`followOffset` / `followLinkHeader`',
         'Page two is where pagination bugs live',
       ],
       [

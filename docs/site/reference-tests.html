@@ -1200,7 +1200,7 @@ body.print details.api > summary {
     <nav aria-label="Documentation"><ul class="nav"><li><a href="index.html">Overview</a></li><li><a href="architecture.html">Architecture</a></li><li><a href="worked-example.html">Worked example</a></li><li><a href="structure.html">Project structure</a></li><li><a href="reference-root.html">Reference: configuration &amp; tooling</a></li><li><a href="reference-foundation.html">Reference: config, core &amp; types</a></li><li><a href="reference-auth.html">Reference: authentication &amp; contracts</a></li><li><a href="reference-protocols.html">Reference: protocols, services &amp; fixtures</a></li><li><a href="reference-utils.html">Reference: utilities, stubbing &amp; reporting</a></li><li><a href="reference-tests.html" aria-current="page">Reference: tests &amp; repository docs</a></li><li><a href="playbooks.html">Playbooks</a></li><li><a href="conventions.html">Conventions</a></li><li><a href="troubleshooting.html">Troubleshooting</a></li><li><a href="api-index.html">API index</a></li><li><a href="glossary.html">Glossary</a></li></ul></nav>
     <div class="sidebar-foot">
       <a href="playwright-api-framework-documentation.pdf" download>Download PDF</a>
-      <span>Generated 2026-09-01</span>
+      <span>Generated 2026-09-02</span>
     </div>
   </aside>
   <main id="main">
@@ -1302,7 +1302,7 @@ test.<span class="tok-f">beforeEach</span>(<span class="tok-k">async</span> ({ a
 <ul><li>The <code>Link</code> header advertises <code>first</code>, <code>next</code> and <code>last</code>, and <code>response.nextPageUrl()</code> agrees with <code>parseLinkHeader</code>.</li><li><code>X-Total-Count</code> matches the length of the walk.</li><li>Page size is honoured, the final page is short, and it carries no <code>next</code> — which is how offset-style walkers know to stop.</li><li>Every item in a page validates against the schema, reported in one assertion rather than stopping at the first bad item.</li><li>Reads declare a <code>Cache-Control</code> header — an omission only an API test ever notices.</li></ul>
 <aside class="callout note"><span class="callout-tag">Note</span><div>This API *simulates* writes: a POST answers 201 with a plausible body and stores nothing. That is why the service's method is called <code>simulateCreate</code>, and why the lifecycle suite runs elsewhere. A method named <code>create</code> that does not create is a trap for the next person.</div></aside>
   <div class="change"><h4>When you need to change it</h4><ul><li>Your API paginates differently — swap the walker.</li><li>The dataset size changes.</li></ul></div>
-  <div class="change"><h4>How to change it</h4><ol class="steps"><li><p>For cursor pagination use <code>followCursor</code>; for offset/limit use <code>followOffset</code>. All three walkers take the same shape of callback.</p></li><li><p>Assert the total from a constant, as <code>PostService.TOTAL_POSTS</code> does, so a change is one edit.</p></li></ol></div>
+  <div class="change"><h4>How to change it</h4><ol class="steps"><li><p>For <code>Link</code>-header pagination use <code>followLinkHeader</code>; for offset/limit use <code>followOffset</code>. Both walkers take the same shape of callback.</p></li><li><p>Assert the total from a constant, as <code>PostService.TOTAL_POSTS</code> does, so a change is one edit.</p></li></ol></div>
   <div class="change why"><h4>Why the change belongs here</h4><p>Pagination is where &quot;the endpoint works&quot; and &quot;the endpoint works at scale&quot; diverge, and it is almost never covered because walking pages by hand in a test is tedious. Making it one line removes the excuse.</p></div>
   <div class="change gotcha"><h4>Watch out for</h4><ul><li>The dataset is stable, which is what allows exact counts. Against changing data, assert invariants — no duplicates, no gaps — rather than totals.</li><li>The walkers have a hard page ceiling, so a server that always advertises a next page produces a clear failure rather than a hang.</li></ul></div>
   <p class="related">Related: <code>src/services/post.service.ts</code> &middot; <code>src/utils/pagination.utils.ts</code> &middot; <code>src/utils/header.utils.ts</code></p>
@@ -1507,7 +1507,7 @@ response.<span class="tok-f">expectOk</span>().<span class="tok-f">expectPath</s
       <div class="pager">
         <a class="prev" href="reference-utils.html">&larr; Reference: utilities, stubbing &amp; reporting</a><a class="next" href="playbooks.html">Playbooks &rarr;</a>
       </div>
-      <p>Generated from source by <code>npm run docs</code>. 104 files documented, 367 exports extracted.</p>
+      <p>Generated from source by <code>npm run docs</code>. 89 files documented, 150 exports extracted.</p>
     </footer>
   </main>
 </div>

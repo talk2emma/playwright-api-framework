@@ -20,7 +20,7 @@ import type { HeaderMap } from '../types';
 import { logger } from '../utils/logger';
 
 /** One parsed event from the stream. */
-export interface ServerSentEvent {
+interface ServerSentEvent {
   /** Event name. Defaults to `message` when the server sends no `event:` field. */
   readonly event: string;
   /** The joined `data:` lines. */
@@ -180,7 +180,7 @@ export class SseClient {
 }
 
 /** Parses one `field: value` frame into an event, or `null` for a comment. */
-export function parseFrame(frame: string): ServerSentEvent | null {
+function parseFrame(frame: string): ServerSentEvent | null {
   const dataLines: string[] = [];
   let event = 'message';
   let id: string | undefined;
@@ -209,43 +209,4 @@ export function parseFrame(frame: string): ServerSentEvent | null {
   if (id !== undefined) parsed.id = id;
   if (retry !== undefined) parsed.retry = retry;
   return parsed;
-}
-
-/**
- * Reads an NDJSON stream, calling back for each line.
- *
- * Streaming JSON endpoints — log tails, bulk exports, LLM token streams — use
- * this rather than SSE framing. The signature mirrors `SseClient` so switching
- * between the two costs nothing.
- */
-export async function readNdjsonStream<T>(
-  url: string,
-  onLine: (value: T) => void | Promise<void>,
-  options: { headers?: HeaderMap; signal?: AbortSignal } = {},
-): Promise<void> {
-  const response = await fetch(url, {
-    headers: { accept: 'application/x-ndjson', ...(options.headers ?? {}) },
-    ...(options.signal ? { signal: options.signal } : {}),
-  });
-  if (!response.ok || !response.body) {
-    throw new Error(`NDJSON stream ${url} failed with ${response.status}.`);
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    let newline = buffer.indexOf('\n');
-    while (newline !== -1) {
-      const line = buffer.slice(0, newline).trim();
-      buffer = buffer.slice(newline + 1);
-      if (line) await onLine(JSON.parse(line) as T);
-      newline = buffer.indexOf('\n');
-    }
-  }
-  if (buffer.trim()) await onLine(JSON.parse(buffer.trim()) as T);
 }

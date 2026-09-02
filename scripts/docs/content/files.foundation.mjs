@@ -200,22 +200,8 @@ export type EnvironmentName = keyof typeof ENVIRONMENTS;`,
     gotchas: [
       'Raising a timeout to make a flaky test pass converts a fast failure into a slow one. Find out what is slow first — the latency report is attached to every test.',
     ],
-    related: ['playwright.config.ts', 'src/utils/retry.utils.ts', 'src/core/http.client.ts'],
+    related: ['playwright.config.ts', 'src/core/http.client.ts'],
   },
-
-  'src/config/index.ts': {
-    group: 'config',
-    purpose: 'Barrel for the configuration layer, so everything else imports from one place.',
-    changeWhen: ['You add an export to the config layer.'],
-    changeHow: [
-      {
-        text: 'Re-export it, using `export type` for types so the emitted JavaScript stays clean.',
-      },
-    ],
-    why: 'A single import path means moving a file inside `src/config/` never breaks a caller.',
-    related: ['src/config/env.config.ts'],
-  },
-
   /* ---------------------------------------------------------------- */
   /* src/core                                                          */
   /* ---------------------------------------------------------------- */
@@ -336,12 +322,7 @@ return response;`,
       'A header set explicitly on a request always wins over the auth provider, so a test can override credentials without swapping clients.',
       '`test.step` only works inside a running test; `inTest()` detects that so the client also works from a hook or a script.',
     ],
-    related: [
-      'src/core/request.builder.ts',
-      'src/core/api.response.ts',
-      'src/core/errors.ts',
-      'src/auth/index.ts',
-    ],
+    related: ['src/core/request.builder.ts', 'src/core/api.response.ts', 'src/core/errors.ts'],
   },
 
   'src/core/request.builder.ts': {
@@ -632,13 +613,16 @@ response.fields();                   // every leaf path — useful for shape dri
             'A token could not be obtained or refreshed.',
             'Configuration, or the identity provider',
           ],
-          ['`PollTimeoutError`', 'A `waitFor` gave up.', 'The API, or the expectation'],
+          [
+            '`PollTimeoutError`',
+            'A protocol client waited for a frame that never arrived.',
+            'The API, or the expectation',
+          ],
           [
             '`ReadOnlyEnvironmentError`',
             'A write was attempted on a read-only environment.',
             'The test',
           ],
-          ['`LatencyBudgetError`', 'A response was slower than its budget.', 'The API'],
         ],
       },
       {
@@ -677,16 +661,6 @@ at a writable environment, or mark the test @read-only.`,
     ],
     related: ['src/core/http.client.ts', 'src/core/api.response.ts'],
   },
-
-  'src/core/index.ts': {
-    group: 'core',
-    purpose: 'Barrel for the core layer.',
-    changeWhen: ['You add an export to `src/core/`.'],
-    changeHow: [{ text: 'Re-export it, with `export type` for types.' }],
-    why: 'One import path means the internal file layout can change without breaking callers.',
-    related: ['src/core/http.client.ts'],
-  },
-
   /* ---------------------------------------------------------------- */
   /* src/types                                                         */
   /* ---------------------------------------------------------------- */

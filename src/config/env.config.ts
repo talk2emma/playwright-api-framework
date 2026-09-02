@@ -136,7 +136,7 @@ const raw = parsed.data;
 const environment: EnvironmentDefinition = ENVIRONMENTS[raw.TEST_ENV];
 
 /** A named credential set. Roles map onto the authorisation matrix under test. */
-export interface UserCredentials {
+interface UserCredentials {
   readonly role: UserRole;
   readonly username: string;
   readonly password: string;
@@ -188,8 +188,6 @@ export const config = Object.freeze({
   readOnly: environment.readOnly,
   verifyTls: environment.verifyTls,
 });
-
-export type ResolvedConfig = typeof config;
 
 /**
  * Credentials for a role, or a precise error naming the two variables to set.

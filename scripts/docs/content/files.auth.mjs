@@ -7,7 +7,7 @@ export default {
   'src/auth/static.auth.ts': {
     group: 'auth',
     purpose:
-      'The four credential schemes that need no network call: `NoAuth`, `BasicAuth`, `BearerAuth` and `ApiKeyAuth`. Grouped in one file because each is a handful of lines and splitting them would cost more in imports than it saves in navigation.',
+      'The three credential schemes that need no network call: `NoAuth`, `BasicAuth` and `ApiKeyAuth`. Grouped in one file because each is a handful of lines and splitting them would cost more in imports than it saves in navigation. Bearer tokens are applied through `.bearer(token)` on the request builder rather than through a strategy class.',
     blocks: [
       {
         type: 'table',
@@ -52,7 +52,7 @@ new BearerAuth(() => readCapturedToken());`,
       '`ApiKeyAuth.queryParams()` exists for the query form, but the client only injects headers. A query key has to be merged by the caller — which is another reason to prefer the header.',
       'A header set explicitly on a request always beats the provider.',
     ],
-    related: ['src/core/http.client.ts', 'src/auth/index.ts', 'src/fixtures/api.fixture.ts'],
+    related: ['src/core/http.client.ts', 'src/fixtures/api.fixture.ts'],
   },
 
   'src/auth/oauth2.auth.ts': {
@@ -163,103 +163,6 @@ OAuth2Auth.clientCredentials(request, { clientAuth: 'body' });`,
     ],
     related: ['src/auth/oauth2.auth.ts', 'src/hooks/global.teardown.ts', '.gitignore'],
   },
-
-  'src/auth/hmac.auth.ts': {
-    group: 'auth',
-    purpose:
-      'HMAC request signing, for payment, banking and webhook APIs that require each request to carry a signature over its own method, path, timestamp and body.',
-    blocks: [
-      {
-        type: 'p',
-        text: 'Unlike the other providers, this one needs the request itself, so it is a *signer* rather than an `AuthProvider`: `sign(spec)` returns the headers to add.',
-      },
-      { type: 'h3', text: 'The canonical string' },
-      {
-        type: 'code',
-        caption: 'The default form, and the one method you will change',
-        text: `canonicalString(spec, timestamp: string): string {
-  const url = new URL(spec.url);
-  const body = this.bodyString(spec);
-  const bodyHash = crypto.createHash(this.algorithm).update(body).digest('hex');
-  return [spec.method.toUpperCase(), \`\${url.pathname}\${url.search}\`, timestamp, bodyHash].join('\\n');
-}`,
-      },
-      {
-        type: 'p',
-        text: 'Getting this even slightly wrong — a trailing slash, the wrong case, the body hashed before rather than after serialisation — produces a 401 with no further explanation. Spelling it out in one documented method is what makes it debuggable.',
-      },
-      { type: 'h3', text: 'Verification' },
-      {
-        type: 'p',
-        text: '`verify()` uses `crypto.timingSafeEqual`, for when the suite acts as a webhook receiver. A verifier that leaks timing is a real finding, and the suite should model correct behaviour rather than merely test for it.',
-      },
-    ],
-    changeWhen: [
-      'The API under test signs a different canonical form.',
-      'A different digest, encoding or header name is required.',
-    ],
-    changeHow: [
-      {
-        text: 'Most variation is an option.',
-        code: `new HmacSigner({\n  algorithm: 'sha512',\n  encoding: 'base64',\n  signatureHeader: 'x-hub-signature-256',\n  timestampHeader: 'x-request-timestamp',\n});`,
-      },
-      {
-        text: 'For a different canonical string, override `canonicalString` — and nothing else. Everything above and below it stays.',
-      },
-    ],
-    why: 'Signing is the single most error-prone piece of API authentication, and the error is always silent. One place, one documented format, one method to change.',
-    gotchas: [
-      'The timestamp is included in the signature, so a signed request usually expires within a minute or two. Do not build one and send it later.',
-      'The body must be hashed exactly as it goes on the wire. If the client re-serialises differently, the signature will not match.',
-      'The secret comes from `HMAC_SECRET`. Never hard-code one, even in an example.',
-    ],
-    related: ['src/config/env.config.ts', 'src/core/request.builder.ts'],
-  },
-
-  'src/auth/session.auth.ts': {
-    group: 'auth',
-    purpose:
-      'Cookie-session authentication: logs in once, captures the session cookie, saves it under `storage/`, and replays it on later runs.',
-    blocks: [
-      {
-        type: 'p',
-        text: 'Plenty of APIs still authenticate with a cookie set by a login endpoint. Two things make that awkward: the login call is expensive, and the cookie belongs to a browser context rather than to a header. Saving the session solves both — and uses the same `storage/` convention as the UI suite, so a hybrid test can share one session.',
-      },
-      {
-        type: 'code',
-        caption: 'Configuration, including the CSRF case',
-        text: `new SessionAuth(request, {
-  loginPath: '/auth/login',
-  credentials: { username, password },
-  cookieNames: ['session', 'csrf'],
-  captureHeader: { from: 'x-csrf-token', sendAs: 'x-csrf-token' },
-});`,
-      },
-      {
-        type: 'p',
-        text: '`captureHeader` covers the common pattern where the login response also returns a CSRF token that must be echoed on every subsequent request.',
-      },
-    ],
-    changeWhen: [
-      'The login endpoint, its payload, or its cookie names change.',
-      'The API needs another header echoed back.',
-    ],
-    changeHow: [
-      { text: 'Everything is an option; the class itself rarely changes.' },
-      {
-        text: 'When credentials change, delete the saved session — it outlives the credential that created it.',
-        code: `rm storage/session-*.json`,
-      },
-    ],
-    why: 'Cookie sessions are stateful in a way header credentials are not, so they need a place to keep that state. Making it a file rather than memory is what lets a re-run skip the login entirely.',
-    gotchas: [
-      'If the login succeeds but sets no matching cookie, the error lists which cookies actually arrived — usually the `cookieNames` option is wrong.',
-      'The saved file is a live credential: mode `0600`, git-ignored, and worth deleting after a password change.',
-      'Playwright joins repeated `Set-Cookie` headers with a newline, which is why the parser splits on newlines and not commas — a comma appears inside an `Expires` date.',
-    ],
-    related: ['src/utils/header.utils.ts', 'src/hooks/auth.setup.ts', '.gitignore'],
-  },
-
   'src/auth/jwt.ts': {
     group: 'auth',
     purpose:
@@ -272,28 +175,22 @@ OAuth2Auth.clientCredentials(request, { clientAuth: 'body' });`,
       {
         type: 'table',
         head: ['Function', 'Returns'],
-        rows: [
-          ['`decodeJwt(token)`', 'Header, claims and signature segment'],
-          ['`jwtClaims(token)`', 'Just the claims — the common case'],
-          ['`jwtExpiry(token)`', 'A `Date`, or `undefined`'],
-          ['`isJwtExpired(token, skew)`', 'Expiry check with optional clock skew'],
-          ['`jwtScopes(token)`', 'Scopes from either convention, normalised to one array'],
-        ],
+        rows: [['`decodeJwt(token)`', 'Header, claims and signature segment']],
       },
       {
         type: 'p',
-        text: '`jwtScopes` reads both a space-separated `scope` string (OAuth 2) and a `scp` array (Microsoft and others), because which one you get depends on the identity provider and a test should not have to care.',
+        text: 'One function, because one is what the suite uses. Named accessors for claims, expiry and scopes existed here and were never called; they were removed rather than left as surface nobody exercises.',
       },
       {
         type: 'note',
-        text: '`exp` is in **seconds** since the epoch, not milliseconds. That off-by-a-thousand is the classic JWT bug; `jwtExpiry` handles the conversion so nothing else has to.',
+        text: '`exp` is in **seconds** since the epoch, not milliseconds. That off-by-a-thousand is the classic JWT bug — convert at the point of use, and remember it when adding an expiry helper.',
       },
     ],
     changeWhen: ['A test needs a claim the helpers do not expose.'],
     changeHow: [
       {
-        text: '`JwtClaims` extends `UnknownRecord`, so custom claims are already reachable.',
-        code: `const tenant = jwtClaims(token)['https://example.com/tenant'];`,
+        text: 'The decoded `claims` object is an open record, so custom claims are already reachable.',
+        code: `const tenant = decodeJwt(token).claims['https://example.com/tenant'];`,
       },
       { text: 'Add a named helper only for a claim used repeatedly across the suite.' },
     ],
@@ -305,20 +202,6 @@ OAuth2Auth.clientCredentials(request, { clientAuth: 'body' });`,
     ],
     related: ['src/auth/oauth2.auth.ts', 'src/core/errors.ts'],
   },
-
-  'src/auth/index.ts': {
-    group: 'auth',
-    purpose: 'Barrel for the authentication layer.',
-    changeWhen: ['You add a provider or a helper.'],
-    changeHow: [
-      {
-        text: 'Re-export it here, and add it to `defaultAuthProvider` if it should be chosen automatically.',
-      },
-    ],
-    why: 'One import path, and one place to see every scheme the framework supports.',
-    related: ['src/fixtures/api.fixture.ts'],
-  },
-
   /* ---------------------------------------------------------------- */
   /* src/contracts                                                     */
   /* ---------------------------------------------------------------- */
@@ -564,19 +447,5 @@ items.0.price must be number (expected number)`,
       'An undocumented operation is reported as a validation failure. That is usually a real finding: the suite is calling something the document does not describe.',
     ],
     related: ['src/contracts/json-schema.ts', 'src/fixtures/api.fixture.ts', 'src/data/README.md'],
-  },
-
-  'src/contracts/index.ts': {
-    group: 'contracts',
-    purpose:
-      'Barrel for the contract layer. Also re-exports the schema primitives under a `schemas` namespace, so `schemas.isoDateTime` reads clearly at a call site.',
-    changeWhen: ['You add an export to `src/contracts/`.'],
-    changeHow: [
-      {
-        text: 'Re-export it. Keep the `schemas` namespace export — it is what keeps a long list of primitives from crowding the top-level namespace.',
-      },
-    ],
-    why: 'One import path for three different validation mechanisms, which is what lets a test choose between them without thinking about file layout.',
-    related: ['src/contracts/schemas.ts'],
   },
 };

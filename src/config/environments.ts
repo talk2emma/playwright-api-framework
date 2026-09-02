@@ -137,10 +137,4 @@ export const PUBLIC_APIS = {
   httpBin: 'https://httpbin.org',
 } as const;
 
-export type PublicApiName = keyof typeof PUBLIC_APIS;
-
 export const ENVIRONMENT_NAMES = Object.keys(ENVIRONMENTS) as EnvironmentName[];
-
-export function isEnvironmentName(value: string): value is EnvironmentName {
-  return Object.prototype.hasOwnProperty.call(ENVIRONMENTS, value);
-}
