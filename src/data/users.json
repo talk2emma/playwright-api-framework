@@ -1,0 +1,26 @@
+{
+  "roles": ["admin", "standard", "readonly"],
+  "seed": [
+    {
+      "email": "seed.admin@example.com",
+      "firstName": "Ada",
+      "lastName": "Lovelace",
+      "role": "admin",
+      "active": true
+    },
+    {
+      "email": "seed.standard@example.com",
+      "firstName": "Grace",
+      "lastName": "Hopper",
+      "role": "standard",
+      "active": true
+    },
+    {
+      "email": "seed.readonly@example.com",
+      "firstName": "Alan",
+      "lastName": "Turing",
+      "role": "readonly",
+      "active": false
+    }
+  ]
+}

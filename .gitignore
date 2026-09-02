@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.cache/
+
+# Test outputs
+test-results/
+playwright-report/
+reports/
+blob-report/
+*.log
+
+# Secrets and captured sessions
+.env
+.env.*
+!.env.example
+storage/*.json
+
+# Documentation intermediates. The built site (docs/site/) and the PDF ARE
+# committed: they are the deliverable, and README points readers straight at
+# them. Only the compiler-API extraction that feeds the renderer is ignored.
+docs/generated/
+
+# OS / editor
+.DS_Store
+.idea/
+*.swp

@@ -1,0 +1,2 @@
+A small text file used by upload tests. Its contents do not matter;
+its size and checksum do.

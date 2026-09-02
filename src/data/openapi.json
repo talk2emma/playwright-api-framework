@@ -1,0 +1,224 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "restful-api.dev — objects",
+    "version": "1.0.0",
+    "description": "Hand-authored description of the /objects resource of https://api.restful-api.dev. The service publishes no OpenAPI document, so this one records what the API was OBSERVED to do — including the parts that are unusual. It is loaded automatically by the `contract` fixture from src/data/openapi.json."
+  },
+  "servers": [{ "url": "https://api.restful-api.dev" }],
+  "paths": {
+    "/objects": {
+      "get": {
+        "operationId": "listObjects",
+        "summary": "List objects. Returns only the seeded set; created objects are never listed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Repeat the parameter to filter by several ids. A comma-joined list is ignored.",
+            "schema": { "type": "array", "items": { "type": "string" } },
+            "style": "form",
+            "explode": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The matching objects.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Object" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createObject",
+        "summary": "Create an object. Answers 200, not 201. No validation is performed.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/ObjectInput" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The created object. This is the only response carrying createdAt.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/CreatedObject" } }
+            }
+          },
+          "400": {
+            "description": "The request body could not be parsed.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          }
+        }
+      }
+    },
+    "/objects/{id}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+      ],
+      "get": {
+        "operationId": "getObject",
+        "summary": "Read one object. Carries no timestamps at all.",
+        "responses": {
+          "200": {
+            "description": "The stored object.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Object" } }
+            }
+          },
+          "404": {
+            "description": "No object with that id.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceObject",
+        "summary": "Replace an object wholesale. Fields not sent are discarded.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/ObjectInput" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The replaced object, carrying updatedAt.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/UpdatedObject" } }
+            }
+          },
+          "404": {
+            "description": "No object with that id.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateObject",
+        "summary": "Partially update an object. Fields not sent are preserved.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/ObjectInput" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated object, carrying updatedAt.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/UpdatedObject" } }
+            }
+          },
+          "404": {
+            "description": "No object with that id.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteObject",
+        "summary": "Delete an object. Answers 200 with a message body, not 204.",
+        "responses": {
+          "200": {
+            "description": "Deletion acknowledgement.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DeleteAcknowledgement" }
+              }
+            }
+          },
+          "404": {
+            "description": "No object with that id — including a repeated delete.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ObjectData": {
+        "type": "object",
+        "nullable": true,
+        "additionalProperties": true,
+        "description": "Free-form payload. Arbitrary keys, including keys containing spaces."
+      },
+      "Object": {
+        "type": "object",
+        "required": ["id"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "nullable": true },
+          "data": { "$ref": "#/components/schemas/ObjectData" }
+        }
+      },
+      "CreatedObject": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Object" },
+          {
+            "type": "object",
+            "required": ["createdAt"],
+            "properties": {
+              "createdAt": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Epoch milliseconds. Present on create responses only."
+              }
+            }
+          }
+        ]
+      },
+      "UpdatedObject": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Object" },
+          {
+            "type": "object",
+            "required": ["updatedAt"],
+            "properties": {
+              "updatedAt": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Epoch milliseconds. Present on update responses only."
+              }
+            }
+          }
+        ]
+      },
+      "ObjectInput": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "name": { "type": "string", "nullable": true },
+          "data": { "$ref": "#/components/schemas/ObjectData" }
+        }
+      },
+      "DeleteAcknowledgement": {
+        "type": "object",
+        "required": ["message"],
+        "properties": { "message": { "type": "string", "minLength": 1 } }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "description": "The API's error shape. Note this is NOT RFC 9457 problem details.",
+        "properties": { "error": { "type": "string", "minLength": 1 } }
+      }
+    }
+  }
+}

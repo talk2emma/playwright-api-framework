@@ -1,0 +1,45 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": false,
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+
+    "noEmit": true,
+    "sourceMap": true,
+
+    "paths": {
+      "@config/*": ["./src/config/*"],
+      "@core/*": ["./src/core/*"],
+      "@auth/*": ["./src/auth/*"],
+      "@contracts/*": ["./src/contracts/*"],
+      "@protocols/*": ["./src/protocols/*"],
+      "@services/*": ["./src/services/*"],
+      "@fixtures/*": ["./src/fixtures/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@mocks/*": ["./src/mocks/*"],
+      "@types/*": ["./src/types/*"],
+      "@data/*": ["./src/data/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts", "playwright.config.ts", "*.ts"],
+  "exclude": ["node_modules", "dist", "reports", "test-results", "docs"]
+}

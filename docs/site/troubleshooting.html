@@ -1,0 +1,1264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting — Playwright API Framework</title>
+<meta name="description" content="Failure modes, flakiness and the tools for diagnosing them">
+<style>/* ==========================================================================
+   Stylesheet for the generated documentation site and the print sheet.
+
+   Inlined into every page, so the documentation opens from a file:// URL with
+   no network at all — which is the point: a reference nobody can read on a
+   plane is a reference nobody reads.
+
+   Identity: an instrument panel. The subject is wire protocols, so the page is
+   organised like a trace — monospace labels, a single teal signal colour, and
+   semantic bands reserved for status. System font stacks throughout, because a
+   web font would be the one thing on the page that needs the network.
+   ========================================================================== */
+
+:root {
+  /* Neutrals carry a slight blue bias, chosen rather than inherited. */
+  --ink: #0f1a24;
+  --ink-soft: #33475a;
+  --muted: #5a6e7d;
+  --faint: #8698a5;
+  --paper: #fbfcfd;
+  --surface: #eef3f6;
+  --surface-2: #e4ebf0;
+  --border: #d5dfe6;
+  --border-strong: #b9c8d3;
+
+  /* One signal colour. Everything decorative is a neutral. */
+  --signal: #0a6e68;
+  --signal-ink: #075450;
+  --signal-wash: #e2f1f0;
+
+  /* Semantic bands, used only where they mean something. */
+  --ok: #146b45;
+  --ok-wash: #e3f2ea;
+  --warn: #8a5300;
+  --warn-wash: #fbf0dd;
+  --danger: #a02531;
+  --danger-wash: #fbe7e8;
+
+  /* Syntax tokens. */
+  --sx-comment: #6c8190;
+  --sx-keyword: #9a2b6b;
+  --sx-string: #14614a;
+  --sx-number: #8a4b12;
+  --sx-fn: #1152a3;
+  --sx-type: #6a3ba8;
+  --sx-prop: #0b5f5a;
+  --sx-operator: #55697a;
+  --sx-variable: #a03a12;
+  --sx-regex: #9a2b6b;
+  --sx-flag: #1152a3;
+
+  --font-display:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-body: var(--font-display);
+  --font-mono:
+    ui-monospace, 'SF Mono', SFMono-Regular, 'JetBrains Mono', Menlo, Consolas, 'Liberation Mono',
+    monospace;
+
+  --rail: 292px;
+  --radius: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --ink: #e6edf3;
+    --ink-soft: #b6c4d0;
+    --muted: #92a4b2;
+    --faint: #6c7f8d;
+    --paper: #0d151c;
+    --surface: #141f28;
+    --surface-2: #1b2833;
+    --border: #26343f;
+    --border-strong: #3a4c5a;
+
+    --signal: #4ec9c0;
+    --signal-ink: #7fded6;
+    --signal-wash: #10262a;
+
+    --ok: #56c48c;
+    --ok-wash: #12251c;
+    --warn: #d8a341;
+    --warn-wash: #262011;
+    --danger: #e8747f;
+    --danger-wash: #2a1518;
+
+    --sx-comment: #7d92a1;
+    --sx-keyword: #f28fb8;
+    --sx-string: #7fd6ac;
+    --sx-number: #e0a86a;
+    --sx-fn: #7fb8f5;
+    --sx-type: #c3a5f2;
+    --sx-prop: #6fd3c9;
+    --sx-operator: #9fb1c0;
+    --sx-variable: #f0a37e;
+    --sx-regex: #f28fb8;
+    --sx-flag: #7fb8f5;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Anchors land below the sticky heading rather than under it. */
+  scroll-padding-top: 1.5rem;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip:focus {
+  left: 1rem;
+  top: 1rem;
+  z-index: 50;
+  background: var(--signal);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius);
+}
+
+/* ---------------------------------------------------------------- Layout */
+
+.layout {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 1.75rem 1.25rem 1.5rem;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.brand-mark {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.brand strong {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.brand span {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.filter {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: 0.84rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.filter:focus {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+  border-color: var(--signal);
+}
+
+.nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.nav a {
+  display: block;
+  padding: 0.4rem 0.55rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: 0.875rem;
+  border-radius: var(--radius);
+  border-left: 2px solid transparent;
+}
+
+.nav a:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.nav a[aria-current='page'] {
+  background: var(--paper);
+  color: var(--signal-ink);
+  font-weight: 600;
+  border-left-color: var(--signal);
+}
+
+.sidebar-foot {
+  margin-top: auto;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.sidebar-foot a {
+  color: var(--signal-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sidebar-foot a:hover {
+  text-decoration: underline;
+}
+
+main {
+  padding: 2.75rem 3rem 5rem;
+  max-width: 62rem;
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------- Type */
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--signal-ink);
+}
+
+h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2.3rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.subtitle {
+  margin: 0.5rem 0 0;
+  font-size: 1.02rem;
+  color: var(--muted);
+  max-width: 62ch;
+}
+
+.page-head {
+  padding-bottom: 1.4rem;
+  margin-bottom: 1.8rem;
+  border-bottom: 2px solid var(--ink);
+}
+
+h2 {
+  margin: 2.6rem 0 0.9rem;
+  font-family: var(--font-display);
+  font-size: 1.42rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+  text-wrap: balance;
+}
+
+h3 {
+  margin: 1.9rem 0 0.6rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+h4 {
+  margin: 1.2rem 0 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+p {
+  margin: 0 0 0.95rem;
+  max-width: 74ch;
+}
+
+ul,
+ol {
+  margin: 0 0 1rem;
+  padding-left: 1.3rem;
+  max-width: 74ch;
+}
+
+li {
+  margin: 0.28rem 0;
+}
+
+a {
+  color: var(--signal-ink);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- Code */
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.855em;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.08em 0.32em;
+  word-break: break-word;
+}
+
+pre {
+  margin: 0;
+  overflow-x: auto;
+}
+
+pre code {
+  display: block;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.82rem;
+  line-height: 1.62;
+  white-space: pre;
+  word-break: normal;
+}
+
+figure.code {
+  margin: 1.1rem 0 1.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--signal);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+figure.code figcaption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.4rem 0.85rem;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+figure.code figcaption .lang {
+  flex: none;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: var(--signal-ink);
+  font-weight: 600;
+}
+
+figure.code pre {
+  padding: 0.85rem 0.95rem;
+}
+
+pre.tree {
+  margin: 1.1rem 0 1.4rem;
+  padding: 0.95rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+/* ---------------------------------------------------------------- Tokens */
+
+.tok-c {
+  color: var(--sx-comment);
+  font-style: italic;
+}
+.tok-k {
+  color: var(--sx-keyword);
+  font-weight: 600;
+}
+.tok-s {
+  color: var(--sx-string);
+}
+.tok-r {
+  color: var(--sx-regex);
+}
+.tok-n {
+  color: var(--sx-number);
+}
+.tok-f {
+  color: var(--sx-fn);
+}
+.tok-t {
+  color: var(--sx-type);
+}
+.tok-p {
+  color: var(--sx-prop);
+}
+.tok-o {
+  color: var(--sx-operator);
+}
+.tok-v {
+  color: var(--sx-variable);
+}
+.tok-a {
+  color: var(--sx-flag);
+}
+
+/* ---------------------------------------------------------------- Callouts */
+
+.callout {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  margin: 1.1rem 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  max-width: 74ch;
+}
+
+.callout p {
+  margin: 0;
+}
+
+.callout-tag {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.16rem 0.42rem;
+  border-radius: 3px;
+  margin-top: 0.15rem;
+}
+
+.callout.note {
+  border-left-color: var(--signal);
+  background: var(--signal-wash);
+}
+
+.callout.note .callout-tag {
+  background: var(--signal);
+  color: #fff;
+}
+
+.callout.warn {
+  border-left-color: var(--warn);
+  background: var(--warn-wash);
+}
+
+.callout.warn .callout-tag {
+  background: var(--warn);
+  color: #fff;
+}
+
+.callout.rule {
+  border-left-color: var(--ink);
+  background: var(--surface-2);
+}
+
+.callout.rule .callout-tag {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------------------------------------------------------------- Tables */
+
+.table-wrap {
+  /* Wide tables scroll inside their own box; the page body never does. */
+  overflow-x: auto;
+  margin: 1.1rem 0 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.865rem;
+  font-variant-numeric: tabular-nums;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+th {
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+tbody tr:hover {
+  background: var(--surface);
+}
+
+td code {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- Steps */
+
+ol.steps {
+  list-style: none;
+  counter-reset: step;
+  padding: 0;
+  margin: 0.6rem 0 1.2rem;
+  max-width: none;
+}
+
+ol.steps > li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 2.1rem;
+  margin-bottom: 0.85rem;
+}
+
+ol.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.08rem;
+  width: 1.45rem;
+  height: 1.45rem;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+ol.steps > li > p {
+  margin: 0 0 0.45rem;
+}
+
+/* ---------------------------------------------------------------- Files */
+
+.file {
+  margin: 1.6rem 0 2.4rem;
+  padding: 0 0 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.file-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.file-head h3 {
+  margin: 0;
+  font-size: 0.94rem;
+}
+
+.file-head code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.file-meta {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.file-purpose {
+  margin: 0.9rem 1rem 0.9rem;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.file > *:not(.file-head) {
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+.change {
+  margin: 0.9rem 1rem;
+  padding-left: 0.85rem;
+  border-left: 2px solid var(--border-strong);
+}
+
+.change ul,
+.change ol {
+  margin-bottom: 0.5rem;
+}
+
+.change.why p {
+  color: var(--ink-soft);
+}
+
+.change.gotcha {
+  border-left-color: var(--warn);
+}
+
+.related {
+  margin: 0.8rem 1rem 1rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.related code {
+  font-size: 0.75rem;
+  background: var(--surface);
+}
+
+/* ---------------------------------------------------------------- API */
+
+details.api {
+  margin: 0.9rem 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+details.api > summary {
+  cursor: pointer;
+  padding: 0.45rem 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--signal-ink);
+  font-weight: 600;
+}
+
+details.api[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.api-item {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.api-item:last-child {
+  border-bottom: 0;
+}
+
+.api-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.api-head code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.api-heritage {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.api-doc {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+
+.api-shape {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.7rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 0.76rem;
+  overflow-x: auto;
+}
+
+table.api-members {
+  margin-top: 0.55rem;
+  font-size: 0.8rem;
+}
+
+table.api-members td {
+  padding: 0.32rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+table.api-members td:first-child {
+  width: 44%;
+  white-space: nowrap;
+}
+
+table.api-members code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.78rem;
+}
+
+.badge {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.badge-class,
+.badge-interface {
+  background: var(--signal-wash);
+  color: var(--signal-ink);
+  border-color: var(--signal);
+}
+
+.badge-function,
+.badge-fn {
+  background: var(--ok-wash);
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.badge-type {
+  background: var(--warn-wash);
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.badge-const,
+.badge-re-export {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------- On this page */
+
+.toc {
+  margin: 0 0 2rem;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.toc h2 {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  border: 0;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.1rem 1.2rem;
+  max-width: none;
+}
+
+.toc li {
+  margin: 0;
+}
+
+.toc a {
+  display: block;
+  padding: 0.15rem 0;
+  font-size: 0.83rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.toc a:hover {
+  color: var(--signal-ink);
+  text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------- Footer */
+
+.page-foot {
+  margin-top: 3.5rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pager a {
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.pager a:hover {
+  border-color: var(--signal);
+  background: var(--signal-wash);
+}
+
+/* ---------------------------------------------------------------- Narrow */
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  main {
+    padding: 1.75rem 1.25rem 3rem;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+  }
+}
+
+/* ==========================================================================
+   Print sheet.
+
+   `body.print` is the single-page rendering that becomes the PDF. Colours are
+   pinned to ink-safe values rather than inherited, because the media query
+   above would otherwise hand a dark palette to a printer.
+   ========================================================================== */
+
+body.print {
+  --ink: #10161c;
+  --ink-soft: #2f3f4c;
+  --muted: #5b6b78;
+  --paper: #ffffff;
+  --surface: #f4f7f9;
+  --surface-2: #e9eff3;
+  --border: #ccd8e0;
+  --border-strong: #aebecb;
+  --signal: #0a6e68;
+  --signal-ink: #064e4a;
+  --signal-wash: #e6f2f1;
+
+  --sx-comment: #5e7583;
+  --sx-keyword: #8c1f5c;
+  --sx-string: #0f5540;
+  --sx-number: #7a3f0c;
+  --sx-fn: #0d4488;
+  --sx-type: #59309a;
+  --sx-prop: #08514d;
+  --sx-operator: #47596a;
+  --sx-variable: #8c300d;
+  --sx-regex: #8c1f5c;
+  --sx-flag: #0d4488;
+
+  font-size: 10pt;
+  line-height: 1.5;
+  background: #fff;
+}
+
+body.print main,
+body.print .sidebar {
+  display: none;
+}
+
+body.print .print-page {
+  padding: 0;
+  max-width: none;
+}
+
+body.print h1.print-h1 {
+  font-size: 21pt;
+  margin: 0 0 0.3rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid var(--ink);
+  /* Each section opens a new sheet, so the printed manual has real chapters. */
+  page-break-before: always;
+}
+
+body.print .subtitle {
+  margin: 0 0 1.4rem;
+  font-size: 11pt;
+}
+
+body.print h2 {
+  font-size: 13pt;
+  margin: 1.4rem 0 0.6rem;
+  page-break-after: avoid;
+}
+
+body.print h3 {
+  font-size: 11pt;
+  page-break-after: avoid;
+}
+
+body.print pre {
+  font-size: 7.6pt;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+body.print table {
+  font-size: 8pt;
+  page-break-inside: auto;
+}
+
+body.print .file {
+  /* Deliberately *not* `page-break-inside: avoid`. Some file entries run over a
+   * page; forbidding a break inside them leaves large blank gaps and adds
+   * dozens of pages to the PDF. */
+  margin: 0.9rem 0 1.3rem;
+}
+
+body.print table.api-members td:first-child {
+  width: 46%;
+  white-space: normal;
+}
+
+body.print .api-item {
+  page-break-inside: avoid;
+}
+
+body.print .toc,
+body.print .pager,
+body.print .skip,
+body.print .filter {
+  display: none;
+}
+
+body.print details.api {
+  border-color: var(--border);
+}
+
+body.print details.api > summary {
+  list-style: none;
+}
+
+/* ---- Cover ---- */
+
+.cover {
+  height: 24cm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  page-break-after: always;
+  border-left: 5px solid var(--signal);
+  padding-left: 1.6cm;
+}
+
+.cover h1 {
+  font-size: 34pt;
+  line-height: 1.05;
+  margin: 0.3rem 0 0;
+  letter-spacing: -0.03em;
+}
+
+.cover .eyebrow {
+  font-size: 9pt;
+  letter-spacing: 0.2em;
+}
+
+.cover-sub {
+  margin: 0.9rem 0 0;
+  font-size: 12pt;
+  color: var(--muted);
+  max-width: 30ch;
+}
+
+.cover-meta {
+  margin: 3.5rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 14ch));
+  gap: 1.1rem 3rem;
+}
+
+.cover-meta div {
+  border-top: 1px solid var(--border-strong);
+  padding-top: 0.35rem;
+}
+
+.cover-meta dt {
+  font-family: var(--font-mono);
+  font-size: 7pt;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cover-meta dd {
+  margin: 0.15rem 0 0;
+  font-size: 12pt;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Contents ---- */
+
+.contents {
+  page-break-after: always;
+}
+
+.print-toc {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  counter-reset: chapter;
+}
+
+.print-toc li {
+  display: grid;
+  grid-template-columns: 2.6rem 1fr;
+  gap: 0.1rem 0.6rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.print-toc .num {
+  font-family: var(--font-mono);
+  font-size: 9pt;
+  font-weight: 600;
+  color: var(--signal-ink);
+}
+
+.print-toc a {
+  font-size: 11pt;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.print-toc .sub {
+  grid-column: 2;
+  font-size: 8.5pt;
+  color: var(--muted);
+}
+
+.print-toc .dots {
+  display: none;
+}
+
+.print-page:first-of-type h1.print-h1 {
+  page-break-before: avoid;
+}
+
+@media print {
+  .cover {
+    height: 22cm;
+  }
+
+  a {
+    color: var(--signal-ink);
+    text-decoration: none;
+  }
+
+  /* Never strand a heading at the foot of a page. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    page-break-after: avoid;
+  }
+
+  figure.code,
+  .callout {
+    page-break-inside: avoid;
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">API</span><div><strong>Playwright API Framework</strong><span>Documentation v1.0</span></div></div>
+    <input id="nav-filter" class="filter" type="search" placeholder="Filter sections…" aria-label="Filter sections">
+    <nav aria-label="Documentation"><ul class="nav"><li><a href="index.html">Overview</a></li><li><a href="architecture.html">Architecture</a></li><li><a href="worked-example.html">Worked example</a></li><li><a href="structure.html">Project structure</a></li><li><a href="reference-root.html">Reference: configuration &amp; tooling</a></li><li><a href="reference-foundation.html">Reference: config, core &amp; types</a></li><li><a href="reference-auth.html">Reference: authentication &amp; contracts</a></li><li><a href="reference-protocols.html">Reference: protocols, services &amp; fixtures</a></li><li><a href="reference-utils.html">Reference: utilities, stubbing &amp; reporting</a></li><li><a href="reference-tests.html">Reference: tests &amp; repository docs</a></li><li><a href="playbooks.html">Playbooks</a></li><li><a href="conventions.html">Conventions</a></li><li><a href="troubleshooting.html" aria-current="page">Troubleshooting</a></li><li><a href="api-index.html">API index</a></li><li><a href="glossary.html">Glossary</a></li></ul></nav>
+    <div class="sidebar-foot">
+      <a href="playwright-api-framework-documentation.pdf" download>Download PDF</a>
+      <span>Generated 2026-09-01</span>
+    </div>
+  </aside>
+  <main id="main">
+    <header class="page-head">
+      <p class="eyebrow">Playwright API Framework</p>
+      <h1>Troubleshooting</h1>
+      <p class="subtitle">Failure modes, flakiness and the tools for diagnosing them</p>
+    </header>
+    <nav class="toc" aria-label="On this page"><h2>On this page</h2><ul id="toc"><li><a href="#start-up-failures">Start-up failures</a></li><li><a href="#authentication">Authentication</a></li><li><a href="#flakiness">Flakiness</a></li><li><a href="#contract-failures">Contract failures</a></li><li><a href="#streaming">Streaming</a></li><li><a href="#performance-results-that-do-not-make-sense">Performance results that do not make sense</a></li><li><a href="#diagnostic-tools">Diagnostic tools</a></li><li><a href="#tooling">Tooling</a></li></ul></nav>
+    <div class="content"><p>Failure modes, what actually causes them, and how to find out. Ordered by how often they come up.</p>
+<h2 id="start-up-failures">Start-up failures</h2>
+<div class="table-wrap"><table><thead><tr><th>Message</th><th>Cause</th><th>Fix</th></tr></thead><tbody><tr><td><code>Invalid environment configuration</code></td><td>A variable is missing or malformed. The message lists each one by name.</td><td>Copy <code>.env.example</code> to <code>.env</code> and fill in the named variables.</td></tr><tr><td><code>Cannot reach &lt;url&gt;</code></td><td><code>globalSetup</code> could not open a connection at all.</td><td>Check <code>TEST_ENV</code>, the URL in <code>environments.ts</code>, and whether the target needs a VPN or tunnel.</td></tr><tr><td><code>No credentials for role &quot;admin&quot;</code></td><td><code>getUser('admin')</code> was called with no <code>ADMIN_USERNAME</code>/<code>ADMIN_PASSWORD</code>.</td><td>Set both, or use <code>hasUser('admin')</code> to skip rather than fail.</td></tr><tr><td>405 with &quot;daily request limit&quot;</td><td>The <code>api.restful-api.dev</code> anonymous quota (50 requests / 24 h) is spent. Not a defect and not a transport fault.</td><td>Nothing — the live suite skips and <code>tests/contract/objects.stubbed.spec.ts</code> covers the same lifecycle offline. Use <code>--grep-invert @live</code> to skip it deliberately.</td></tr><tr><td><code>Refusing to send POST …: read-only</code></td><td>The environment is marked <code>readOnly</code> and a test tried to write.</td><td>Point <code>TEST_ENV</code> at a writable environment, or tag the test <code>@read-only</code> and make it read-only in fact.</td></tr></tbody></table></div>
+<h2 id="authentication">Authentication</h2>
+<div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Likely cause</th></tr></thead><tbody><tr><td><code>invalid_client</code> from the token endpoint</td><td>Client credentials sent in the wrong place. Providers differ; try <code>clientAuth: 'body'</code>.</td></tr><tr><td>401s that start partway through a run</td><td>A token expired mid-run. The store renews 30s early — if the API issues very short tokens, that skew may need raising.</td></tr><tr><td>401 on the first request only</td><td>The auth provider is producing headers, but the request set its own <code>authorization</code>, which always wins.</td></tr><tr><td>Session auth logs in on every request</td><td>The login response set no cookie matching <code>cookieNames</code>. The error lists which cookies actually arrived.</td></tr><tr><td><code>storage/</code> session keeps being reused after a password change</td><td>Delete <code>storage/*.json</code>. The captured session outlives the credential that created it.</td></tr></tbody></table></div>
+<h2 id="flakiness">Flakiness</h2>
+<p>An API suite has four common sources of flake, and they have different fixes. Guessing between them is what makes flakiness feel unfixable.</p>
+<div class="table-wrap"><table><thead><tr><th>Source</th><th>How it looks</th><th>Fix</th></tr></thead><tbody><tr><td>Eventual consistency</td><td>A resource is created, then a read of it 404s — intermittently</td><td><code>waitFor</code> the read, not a sleep</td></tr><tr><td>Shared state between tests</td><td>Passes at <code>--workers=1</code>, fails at <code>--workers=8</code>, and the failure moves</td><td>Generate unique data; move mutable state to test scope</td></tr><tr><td>Rate limiting</td><td>Bursts of 429, often at the start of a run</td><td>Lower <code>workers</code>, use <code>mapWithConcurrency</code> when seeding, and let the client honour <code>Retry-After</code></td></tr><tr><td>Genuine instability in the target</td><td>Random 502/503 unrelated to the test</td><td>Retries already handle it — but raise it with the service owner; a suite is a good early-warning system</td></tr></tbody></table></div>
+<figure class="code" data-lang="shell"><figcaption><span>Confirming it is ordering, not the test</span><span class="lang">Shell</span></figcaption><pre><code><span class="tok-f">npx</span> playwright test <span class="tok-a">--workers</span>=1        <span class="tok-c"># passes → shared state or rate limiting</span>
+<span class="tok-f">npx</span> playwright test <span class="tok-a">--repeat-each</span>=5   <span class="tok-c"># fails sometimes → genuinely non-deterministic</span></code></pre></figure>
+<h2 id="contract-failures">Contract failures</h2>
+<div class="table-wrap"><table><thead><tr><th>Message</th><th>Meaning</th></tr></thead><tbody><tr><td><code>violates the registered schema &quot;x&quot;</code></td><td>The contract guard fired. The API returned something the schema does not allow — either the API changed, or the schema is wrong.</td></tr><tr><td><code>documents no response for status 4xx</code></td><td>The OpenAPI document has no entry for that status. Usually the document is incomplete, not the API.</td></tr><tr><td><code>External $ref … is not supported</code></td><td>The specification references another file. Bundle it first.</td></tr><tr><td><code>No operation documented for GET /x</code></td><td>The suite is calling an endpoint the document does not describe — a real finding, not a tooling problem.</td></tr></tbody></table></div>
+<aside class="callout note"><span class="callout-tag">Note</span><div>A contract failure is <strong>never</strong> retried. That is structural: the response listeners run outside the client's retry catch, precisely so a schema violation appears once with a clear message rather than three times.</div></aside>
+<h2 id="streaming">Streaming</h2>
+<div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Cause</th></tr></thead><tbody><tr><td>A WebSocket test misses the reply it was waiting for</td><td>It should not — the client buffers from connect. If it still happens, the predicate does not match the frame; log <code>client.messages</code>.</td></tr><tr><td>A test hangs at the end and the worker never exits</td><td>An SSE stream or socket was left open. Use the <code>sse</code> and <code>socket</code> fixtures, which close everything on teardown.</td></tr><tr><td>SSE events never arrive</td><td>A proxy is buffering the stream. Confirm with <code>curl -N</code>; the framework cannot fix a proxy.</td></tr><tr><td>Keep-alive comments arrive as events</td><td>They should not — a line starting with <code>:</code> is a comment and is dropped by <code>parseFrame</code>. If yours differ, the server is not sending valid framing.</td></tr></tbody></table></div>
+<h2 id="performance-results-that-do-not-make-sense">Performance results that do not make sense</h2>
+<ul><li><strong>A p95 much worse than the p50</strong> usually means the suite is competing with itself. Performance tests run at <code>workers: 1</code> for this reason; check the project actually ran under it.</li><li><strong>The first sample is always slowest.</strong> That is connection setup and JIT. <code>sample()</code> discards warm-up runs by default.</li><li><strong>Every route has one sample.</strong> <code>routeOf</code> collapses identifiers, but only the common shapes. Add yours to it if the routes look like <code>/users/abc123def</code>.</li></ul>
+<h2 id="diagnostic-tools">Diagnostic tools</h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Command</th><th>Shows</th></tr></thead><tbody><tr><td>Debug logs</td><td><code>LOG_LEVEL=debug LOG_BODIES=true</code></td><td>Every request, response, retry and backoff decision</td></tr><tr><td>Trace viewer</td><td><code>npx playwright show-trace &lt;trace.zip&gt;</code></td><td>Every request and response, replayable, with timings</td></tr><tr><td>Recording</td><td><code>reports/recordings/&lt;test&gt;.json</code></td><td>The full exchange for a failed test, redacted</td></tr><tr><td>Latency report</td><td>attached to every test</td><td>Per-route p50/p90/p95/p99</td></tr><tr><td>Run summary</td><td><code>reports/summary.json</code></td><td>Totals, pass rate, the ten slowest tests, every failure</td></tr><tr><td>Stub-server log</td><td><code>mockServer.requests</code></td><td>Exactly what the client sent, including headers and body</td></tr></tbody></table></div>
+<h2 id="tooling">Tooling</h2>
+<div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Fix</th></tr></thead><tbody><tr><td><code>program.parse</code> is undefined, or a dependency exports nothing</td><td>A pruned or corrupted install — <code>npm uninstall</code> can remove a transitive dependency Playwright needs. <code>rm -rf node_modules &amp;&amp; npm ci</code>.</td></tr><tr><td>Modules load with empty exports after a clean install</td><td>A poisoned Node compile cache. Delete <code>$TMPDIR/node-compile-cache</code>; it regenerates.</td></tr><tr><td>No <code>summary.json</code>, no HTML report after a run</td><td><code>--reporter=</code> on the command line replaces the config's list. Drop it.</td></tr><tr><td><code>npm run docs</code> fails naming a file</td><td>That file has no documentation entry. Add one in <code>scripts/docs/content/</code>. This is the gate working.</td></tr><tr><td>ESLint reports a rule you disagree with</td><td>Change it in <code>eslint.config.mjs</code>, with a comment explaining why — as the existing exceptions do.</td></tr><tr><td>Most tests skip rather than run</td><td>Either the API quota is spent, or no credentials are configured for the <code>setup</code> project. Both are designed to skip rather than fail; the skip reason says which.</td></tr></tbody></table></div></div>
+    <footer class="page-foot">
+      <div class="pager">
+        <a class="prev" href="conventions.html">&larr; Conventions</a><a class="next" href="api-index.html">API index &rarr;</a>
+      </div>
+      <p>Generated from source by <code>npm run docs</code>. 104 files documented, 367 exports extracted.</p>
+    </footer>
+  </main>
+</div>
+<script>
+document.querySelectorAll('.filter').forEach((input) => {
+  input.addEventListener('input', () => {
+    const term = input.value.toLowerCase();
+    const table = document.getElementById(input.dataset.filterTarget);
+    if (!table) return;
+    for (const row of table.tBodies[0].rows) {
+      row.hidden = term !== '' && !row.textContent.toLowerCase().includes(term);
+    }
+  });
+});
+const navFilter = document.getElementById('nav-filter');
+if (navFilter) {
+  navFilter.addEventListener('input', () => {
+    const term = navFilter.value.toLowerCase();
+    document.querySelectorAll('#toc li').forEach((li) => {
+      li.hidden = term !== '' && !li.textContent.toLowerCase().includes(term);
+    });
+  });
+}
+</script>
+</body>
+</html>

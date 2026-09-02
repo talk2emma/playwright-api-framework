@@ -1,0 +1,38 @@
+services:
+  api-tests:
+    build: .
+    # Secrets are passed through from the host or the CI runner. Nothing
+    # credential-shaped is ever written into the image.
+    environment:
+      TEST_ENV: ${TEST_ENV:-staging}
+      API_BASE_URL: ${API_BASE_URL:-}
+      API_KEY: ${API_KEY:-}
+      OAUTH_TOKEN_URL: ${OAUTH_TOKEN_URL:-}
+      OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID:-}
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:-}
+      STANDARD_USERNAME: ${STANDARD_USERNAME:-}
+      STANDARD_PASSWORD: ${STANDARD_PASSWORD:-}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      STRICT_CONTRACTS: ${STRICT_CONTRACTS:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      CI: 'true'
+    volumes:
+      # Reports are written to the host so a failed containerised run leaves
+      # the same evidence a local run would.
+      - ./reports:/work/reports
+      - ./test-results:/work/test-results
+    # `host` networking lets the suite reach a service running on the
+    # developer's own machine, which is the common case for local debugging.
+    network_mode: ${COMPOSE_NETWORK:-bridge}
+
+  # A second service that runs only the contract suite against the built-in
+  # stub server, so it works with no access to any real environment.
+  contract-tests:
+    build: .
+    environment:
+      TEST_ENV: mock
+      CI: 'true'
+    command: ['--project=contract']
+    volumes:
+      - ./reports:/work/reports

@@ -1,0 +1,166 @@
+# ---------------------------------------------------------------------------
+# The pipeline.
+#
+# Shape: cheap checks first, then the suite split across shards, then one job
+# that merges the shard reports into a single readable result. Splitting means
+# a large suite finishes in minutes; merging means reviewers still see one
+# report rather than four partial ones.
+# ---------------------------------------------------------------------------
+name: API tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # A nightly run against staging catches drift that nobody's branch touched.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to run against
+        type: choice
+        options: [dev, staging, production]
+        default: staging
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TEST_ENV: ${{ github.event.inputs.environment || 'staging' }}
+  CI: 'true'
+
+jobs:
+  quality:
+    name: Lint, types and formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Fails on the first problem, before any test spends time on a network.
+      - run: npm run validate
+
+  test:
+    name: Tests (shard ${{ matrix.shard }}/4)
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      - name: Run the suite
+        run: npx playwright test --shard=${{ matrix.shard }}/4
+        env:
+          # Credentials come from repository secrets and are never written to
+          # a file in the workspace.
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          API_KEY: ${{ secrets.API_KEY }}
+          OAUTH_TOKEN_URL: ${{ secrets.OAUTH_TOKEN_URL }}
+          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          STANDARD_USERNAME: ${{ secrets.STANDARD_USERNAME }}
+          STANDARD_PASSWORD: ${{ secrets.STANDARD_PASSWORD }}
+          READONLY_USERNAME: ${{ secrets.READONLY_USERNAME }}
+          READONLY_PASSWORD: ${{ secrets.READONLY_PASSWORD }}
+          # Contract violations fail the build in CI, not on a laptop.
+          STRICT_CONTRACTS: 'true'
+          PW_BLOB_REPORT: '1'
+
+      - name: Upload this shard's blob report
+        # `always()` matters: the report of a failed shard is the one worth having.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: blob-report
+          retention-days: 14
+
+  merge-reports:
+    name: Merge shard reports
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge into one HTML report
+        run: npx playwright merge-reports --reporter=html,github ./all-blob-reports
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 30
+
+  contract:
+    name: Contract tests (offline)
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Runs against the built-in stub server, so it needs no environment and
+      # no secrets — and therefore also runs on a fork's pull request.
+      - run: npx playwright test --project=contract
+        env:
+          TEST_ENV: mock
+
+  docs:
+    name: Build documentation
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Chromium renders the PDF; nothing else in this job needs a browser.
+      - run: npx playwright install --with-deps chromium
+      # The build fails when a source file has no documentation entry, which is
+      # what stops the documentation drifting behind the code.
+      - run: npm run docs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: |
+            docs/site
+            docs/playwright-api-framework-documentation.pdf
+          retention-days: 30

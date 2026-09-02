@@ -1,0 +1,3 @@
+#!/bin/sh
+# Type errors are cheap to catch here and expensive to catch in CI.
+npm run typecheck
