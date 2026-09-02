@@ -110,9 +110,7 @@ export class LatencyCollector {
 }
 
 /** Times one operation and returns the value alongside its duration. */
-export async function measure<T>(
-  operation: () => Promise<T>,
-): Promise<{ value: T; durationMs: number }> {
+async function measure<T>(operation: () => Promise<T>): Promise<{ value: T; durationMs: number }> {
   const startedAt = performance.now();
   const value = await operation();
   return { value, durationMs: Math.round(performance.now() - startedAt) };
@@ -152,7 +150,7 @@ export async function sample(
  * route. Without this every request would be its own bucket and no
  * distribution would ever have more than one sample in it.
  */
-export function routeOf(url: string): string {
+function routeOf(url: string): string {
   let pathname: string;
   try {
     pathname = new URL(url).pathname;

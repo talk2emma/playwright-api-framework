@@ -23,7 +23,7 @@ import { stubFromRecording } from './mock.server';
 const log = logger.child('recorder');
 
 /** One exchange as stored on disk. */
-export interface RecordedExchange {
+interface RecordedExchange {
   readonly method: HttpMethod;
   readonly path: string;
   readonly query: string;
@@ -37,7 +37,7 @@ export interface RecordedExchange {
 }
 
 /** A whole recorded session. */
-export interface Recording {
+interface Recording {
   readonly environment: string;
   readonly recordedAt: string;
   readonly exchanges: RecordedExchange[];

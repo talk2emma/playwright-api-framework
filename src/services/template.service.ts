@@ -30,7 +30,7 @@ import type { UnknownRecord } from '../types';
  * interface and hoping the schema matches — means the runtime check and the
  * compile-time type can never disagree.
  */
-export const UserSchema = z.object({
+const UserSchema = z.object({
   id: identifier,
   email: z.string().email(),
   firstName: z.string(),
@@ -41,9 +41,9 @@ export const UserSchema = z.object({
   updatedAt: isoDateTime.optional(),
 });
 
-export type User = z.infer<typeof UserSchema>;
+type User = z.infer<typeof UserSchema>;
 
-export const UserPageSchema = offsetPage(UserSchema);
+const UserPageSchema = offsetPage(UserSchema);
 
 /* Registered so `STRICT_CONTRACTS=true` can validate these responses without
  * the test asking, and so contract coverage can count them. */
@@ -64,7 +64,7 @@ registerSchemas([
 /* ------------------------------------------------------------------ */
 
 /** Input accepted by `create`. Everything not supplied is generated. */
-export type NewUser = Partial<Pick<User, 'email' | 'firstName' | 'lastName' | 'role'>>;
+type NewUser = Partial<Pick<User, 'email' | 'firstName' | 'lastName' | 'role'>>;
 
 export class UserService extends BaseService {
   protected readonly basePath = '/users';

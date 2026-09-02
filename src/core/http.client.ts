@@ -39,7 +39,7 @@ export interface AuthProvider {
 }
 
 /** Notified after every exchange — used by the recorder and the reporters. */
-export type ExchangeListener = (record: ExchangeRecord) => void;
+type ExchangeListener = (record: ExchangeRecord) => void;
 
 /**
  * Notified with the full response, body included.
@@ -47,9 +47,9 @@ export type ExchangeListener = (record: ExchangeRecord) => void;
  * Separate from `ExchangeListener` because the exchange record redacts and
  * truncates for logging, while a contract check needs the payload intact.
  */
-export type ResponseListener = (response: ApiResponse) => void;
+type ResponseListener = (response: ApiResponse) => void;
 
-export interface HttpClientOptions {
+interface HttpClientOptions {
   /** Playwright request context. Comes from the `request` fixture. */
   readonly request: APIRequestContext;
   /** Overrides the base URL from configuration. */

@@ -20,7 +20,7 @@ import { CleanupRegistry } from '../utils/cleanup.registry';
 import { logger } from '../utils/logger';
 import type { Logger } from '../utils/logger';
 
-export interface ServiceOptions {
+interface ServiceOptions {
   /** Shared registry so every service in a test cleans up together. */
   readonly cleanup?: CleanupRegistry;
   /** Scoped logger. Defaults to one named after the service. */

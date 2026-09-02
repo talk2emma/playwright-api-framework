@@ -187,20 +187,6 @@ expect(reply.status).toBe('ok');`,
     ],
     related: ['src/fixtures/api.fixture.ts', '.nvmrc', 'src/config/timeouts.ts'],
   },
-
-  'src/protocols/index.ts': {
-    group: 'protocols',
-    purpose: 'Barrel for the non-REST protocol clients.',
-    changeWhen: ['You add a protocol client.'],
-    changeHow: [
-      {
-        text: 'Re-export it, and add a fixture in `api.fixture.ts` if it needs lifecycle management — anything holding a connection does.',
-      },
-    ],
-    why: 'Anything that keeps a connection open needs a fixture to close it. The barrel is the reminder that the two go together.',
-    related: ['src/fixtures/api.fixture.ts'],
-  },
-
   /* ---------------------------------------------------------------- */
   /* src/services                                                      */
   /* ---------------------------------------------------------------- */
@@ -445,7 +431,7 @@ return this.track(user, \`user \${String(user.id)}\`, () => this.remove(user.id)
     ],
     changeHow: [
       { text: 'Copy, rename, change `basePath`, and replace the schema with the real resource.' },
-      { text: 'Export from `src/services/index.ts` and add to the `api` fixture.' },
+      { text: 'Add it to the `api` fixture in `src/fixtures/api.fixture.ts`.' },
       { text: 'Register the schemas so the contract guard can find them.' },
     ],
     why: "The second service object is where a codebase's conventions are actually set. Making the first one exemplary — with its reasoning in comments — is cheaper than reviewing the next ten.",
@@ -460,26 +446,6 @@ return this.track(user, \`user \${String(user.id)}\`, () => this.remove(user.id)
       'src/utils/cleanup.registry.ts',
     ],
   },
-
-  'src/services/index.ts': {
-    group: 'services',
-    purpose:
-      'The service registry: every service is exported here and constructed by the `api` fixture, so a test reaches them all through one object.',
-    changeWhen: ['You add a service.'],
-    changeHow: [
-      { text: 'Export the class, its schema and its types.' },
-      {
-        text: 'Add it to the `api` fixture — two lines, and it is available to every test.',
-        code: `await use({\n  users: new UserService(http, { cleanup, logger: log.child('users') }),\n  orders: new OrderService(http, { cleanup, logger: log.child('orders') }),\n});`,
-      },
-    ],
-    why: "Passing the shared `cleanup` registry to every service is what makes a test's teardown run as one ordered sequence rather than as several independent ones.",
-    gotchas: [
-      'Forgetting to pass `cleanup` gives the service its own registry, which nothing drains — a silent leak.',
-    ],
-    related: ['src/fixtures/api.fixture.ts', 'src/services/template.service.ts'],
-  },
-
   /* ---------------------------------------------------------------- */
   /* src/fixtures                                                      */
   /* ---------------------------------------------------------------- */
@@ -586,12 +552,7 @@ return this.track(user, \`user \${String(user.id)}\`, () => this.remove(user.id)
       'Worker-scoped mutable state makes failures depend on worker count. Both of the worker fixtures here are effectively immutable.',
       "The recorder attaches only on failure; a passing test's recording is noise.",
     ],
-    related: [
-      'src/fixtures/index.ts',
-      'src/services/index.ts',
-      'src/auth/index.ts',
-      'src/mocks/mock.server.ts',
-    ],
+    related: ['src/fixtures/index.ts', 'src/mocks/mock.server.ts'],
   },
 
   'src/fixtures/custom-matchers.ts': {

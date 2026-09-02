@@ -35,7 +35,7 @@ export interface RequestSender {
 }
 
 /** How array query values are encoded. */
-export type ArrayFormat = 'repeat' | 'comma' | 'brackets';
+type ArrayFormat = 'repeat' | 'comma' | 'brackets';
 
 export class RequestBuilder<T = unknown> implements PromiseLike<ApiResponse<T>> {
   private pathParams: PathParams = {};

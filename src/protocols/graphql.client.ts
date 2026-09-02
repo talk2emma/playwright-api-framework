@@ -19,7 +19,7 @@ import { config } from '../config/env.config';
 import { expect } from '@playwright/test';
 
 /** One error entry from a GraphQL response. */
-export interface GraphQlError {
+interface GraphQlError {
   readonly message: string;
   readonly path?: (string | number)[];
   readonly locations?: { line: number; column: number }[];
@@ -33,7 +33,7 @@ interface GraphQlBody<T> {
 }
 
 /** A GraphQL exchange: the HTTP response plus the parsed GraphQL envelope. */
-export class GraphQlResponse<T = unknown> {
+class GraphQlResponse<T = unknown> {
   constructor(
     /** The underlying HTTP response — status, headers and timing live here. */
     readonly http: ApiResponse,
@@ -105,7 +105,7 @@ export class GraphQlResponse<T = unknown> {
   }
 }
 
-export interface GraphQlOptions {
+interface GraphQlOptions {
   /** Absolute endpoint. Defaults to `GRAPHQL_URL` or the environment's value. */
   readonly endpoint?: string;
   /** Headers merged into every operation. */
@@ -208,7 +208,7 @@ export class GraphQlClient {
 }
 
 /** Reads the operation name out of the document, for logs and step titles. */
-export function operationNameOf(document: string): string {
+function operationNameOf(document: string): string {
   return /(?:query|mutation|subscription)\s+(\w+)/.exec(document)?.[1] ?? 'anonymous';
 }
 

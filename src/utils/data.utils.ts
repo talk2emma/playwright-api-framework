@@ -14,7 +14,7 @@
  */
 import { faker, Faker, en } from '@faker-js/faker';
 import crypto from 'node:crypto';
-import type { PartialBy, UnknownRecord } from '../types';
+import type { UnknownRecord } from '../types';
 
 /** A Faker instance seeded from a string, so a title maps to stable data. */
 export function seededFaker(seed: string): Faker {
@@ -24,7 +24,7 @@ export function seededFaker(seed: string): Faker {
 }
 
 /** Stable 32-bit hash — the same string always produces the same seed. */
-export function hashToInt(value: string): number {
+function hashToInt(value: string): number {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
     hash ^= value.charCodeAt(index);
@@ -38,11 +38,6 @@ export function uniqueId(prefix = 'pw'): string {
   return `${prefix}-${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}`;
 }
 
-/** An email address that is unique per call and routes nowhere. */
-export function uniqueEmail(prefix = 'test'): string {
-  return `${prefix}+${uniqueId('')}@example.com`;
-}
-
 /* ------------------------------------------------------------------ */
 /* Factories                                                           */
 /* ------------------------------------------------------------------ */
@@ -54,7 +49,7 @@ export function uniqueEmail(prefix = 'test'): string {
  * role: 'admin' })` — and the factory supplies everything else. When the API
  * adds a required field, the factory changes and no test does.
  */
-export function defineFactory<T extends UnknownRecord>(build: (faker: Faker) => T) {
+function defineFactory<T extends UnknownRecord>(build: (faker: Faker) => T) {
   return (overrides: Partial<T> = {}, source: Faker = faker): T => ({
     ...build(source),
     ...overrides,
@@ -70,38 +65,6 @@ export const buildUser = defineFactory((source) => ({
   role: 'standard',
   active: true,
 }));
-
-/** A representative address payload. */
-export const buildAddress = defineFactory((source) => ({
-  line1: source.location.streetAddress(),
-  line2: source.location.secondaryAddress(),
-  city: source.location.city(),
-  postalCode: source.location.zipCode(),
-  country: source.location.countryCode(),
-}));
-
-/** A representative order payload with a nested line-item collection. */
-export const buildOrder = defineFactory((source) => ({
-  reference: `ORD-${source.string.numeric(8)}`,
-  currency: 'GBP',
-  items: Array.from({ length: source.number.int({ min: 1, max: 4 }) }, () => ({
-    sku: source.string.alphanumeric(10).toUpperCase(),
-    quantity: source.number.int({ min: 1, max: 5 }),
-    unitPriceMinor: source.number.int({ min: 100, max: 50_000 }),
-  })),
-}));
-
-/** Removes keys so a factory result can drive a "missing field" test. */
-export function without<T extends UnknownRecord, K extends keyof T>(
-  value: T,
-  ...keys: K[]
-): PartialBy<T, K> {
-  /* Rebuilt rather than deleted from: `delete` on a computed key deoptimises
-   * the object's shape, and the result here is thrown away immediately anyway. */
-  return Object.fromEntries(
-    Object.entries(value).filter(([key]) => !keys.includes(key as K)),
-  ) as PartialBy<T, K>;
-}
 
 /* ------------------------------------------------------------------ */
 /* Adversarial input                                                   */
@@ -155,42 +118,3 @@ export const INJECTION_PAYLOADS = {
   crlf: 'value\r\nX-Injected: true',
   xxe: '<?xml version="1.0"?><!DOCTYPE r [<!ENTITY e SYSTEM "file:///etc/passwd">]><r>&e;</r>',
 } as const;
-
-/** Numbers that break naive numeric handling. */
-export const EDGE_CASE_NUMBERS = {
-  zero: 0,
-  negative: -1,
-  maxSafeInteger: Number.MAX_SAFE_INTEGER,
-  /* One past the safe range. JavaScript cannot even represent this as a
-   * literal, which is the point: send it as a string and check whether the API
-   * round-trips it or silently rewrites it to 9007199254740992. */
-  beyondSafeInteger: '9007199254740993',
-  float: 0.1 + 0.2,
-  verySmall: 1e-10,
-  veryLarge: 1e308,
-} as const;
-
-/** Dates that break naive date handling. */
-export const EDGE_CASE_DATES = {
-  epoch: '1970-01-01T00:00:00Z',
-  leapDay: '2024-02-29T12:00:00Z',
-  endOfYear: '2025-12-31T23:59:59Z',
-  /* A leap second: valid in ISO 8601, rejected by several date libraries. */
-  leapSecond: '2016-12-31T23:59:60Z',
-  farFuture: '9999-12-31T23:59:59Z',
-  beforeEpoch: '1900-01-01T00:00:00Z',
-  offsetPositive: '2026-06-01T12:00:00+05:30',
-  offsetNegative: '2026-06-01T12:00:00-08:00',
-} as const;
-
-/** A deterministic buffer of a given size, for upload-limit tests. */
-export function payloadOfSize(bytes: number, fill = 'a'): Buffer {
-  return Buffer.alloc(bytes, fill);
-}
-
-/** Deeply nested JSON, for testing parser depth limits. */
-export function deeplyNested(depth: number): UnknownRecord {
-  let node: UnknownRecord = { value: 'leaf' };
-  for (let level = 0; level < depth; level += 1) node = { child: node };
-  return node;
-}

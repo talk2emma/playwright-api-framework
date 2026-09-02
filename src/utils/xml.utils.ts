@@ -40,7 +40,7 @@ export function parseXml(xml: string): UnknownRecord {
  * a key beginning with `@` becomes an attribute, `#text` becomes the element's
  * text, an array repeats its element, and everything else nests.
  */
-export function buildXml(value: unknown, indent = ''): string {
+function buildXml(value: unknown, indent = ''): string {
   if (!isRecord(value)) return escapeXml(asText(value));
 
   const lines: string[] = [];
@@ -86,19 +86,9 @@ function isRecord(value: unknown): value is UnknownRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** Reads a dotted path out of a parsed document, e.g. `Envelope.Body.Result`. */
-export function xmlPath(xml: string, path: string): unknown {
-  return readPath(parseXml(xml), path);
-}
-
 /** True when a body looks like XML, so the response wrapper can pick a parser. */
 export function looksLikeXml(body: string): boolean {
   return /^\s*<\?xml|^\s*<[a-zA-Z_:]/.test(body);
-}
-
-/** The `<Body>` of a SOAP envelope, with the envelope boilerplate removed. */
-export function soapBody(xml: string): unknown {
-  return readPath(parseXml(xml), 'Envelope.Body');
 }
 
 /**
@@ -124,15 +114,6 @@ export function soapFault(xml: string): SoapFault | undefined {
     message: asText(record.faultstring ?? readPath(record, 'Reason.Text')),
     detail: record.detail ?? record.Detail,
   };
-}
-
-/** Wraps a payload in a SOAP 1.1 envelope ready to POST. */
-export function soapEnvelope(body: unknown, namespaces: Record<string, string> = {}): string {
-  const attributes: UnknownRecord = {
-    '@xmlns:soap': 'http://schemas.xmlsoap.org/soap/envelope/',
-  };
-  for (const [prefix, uri] of Object.entries(namespaces)) attributes[`@xmlns:${prefix}`] = uri;
-  return buildXml({ 'soap:Envelope': { ...attributes, 'soap:Body': body } });
 }
 
 /** Renders a parsed node as text without stringifying an object into a message. */

@@ -10,10 +10,9 @@
  * ignorable, because otherwise every diff is noise and nobody reads them.
  */
 import type { UnknownRecord } from '../types';
-import { readPath, leafPaths } from './jsonpath.utils';
 
 /** One difference between two payloads. */
-export interface Difference {
+interface Difference {
   /** Dotted path to the value that differs. */
   readonly path: string;
   readonly kind: 'added' | 'removed' | 'changed' | 'type-changed';
@@ -30,30 +29,11 @@ export interface DiffOptions {
   readonly nullIsAbsent?: boolean;
 }
 
-/** Fields that legitimately change on every request. */
-export const VOLATILE_FIELDS = [
-  'id',
-  '*.id',
-  'createdAt',
-  'updatedAt',
-  'timestamp',
-  'requestId',
-  'traceId',
-  'etag',
-  '*.createdAt',
-  '*.updatedAt',
-];
-
 /** Every difference between two payloads. Empty means they match. */
 export function diff(expected: unknown, actual: unknown, options: DiffOptions = {}): Difference[] {
   const differences: Difference[] = [];
   walk(expected, actual, '', differences, options);
   return differences.filter((entry) => !isIgnored(entry.path, options.ignore ?? []));
-}
-
-/** True when two payloads match, ignoring the paths given. */
-export function matches(expected: unknown, actual: unknown, options: DiffOptions = {}): boolean {
-  return diff(expected, actual, options).length === 0;
 }
 
 /** A readable multi-line rendering, for an assertion message. */
@@ -73,40 +53,6 @@ export function formatDiff(differences: readonly Difference[]): string {
       }
     })
     .join('\n');
-}
-
-/**
- * Compares shape rather than values: which paths exist, and of what type.
- *
- * This is the comparison worth running against a baseline in CI. Values change
- * legitimately all the time; a field disappearing, or turning from a number
- * into a string, is a breaking change for every consumer.
- */
-export function shapeOf(payload: unknown): Record<string, string> {
-  const shape: Record<string, string> = {};
-  for (const path of leafPaths(payload)) {
-    /* Array indices are collapsed so a two-item and a three-item response have
-     * the same shape — otherwise every list endpoint diffs against itself. */
-    const generalized = path.replace(/\[\d+\]/g, '[]');
-    shape[generalized] = typeName(readPath(payload, path));
-  }
-  return shape;
-}
-
-/** Breaking shape changes: fields removed, or fields whose type changed. */
-export function breakingChanges(
-  baseline: Record<string, string>,
-  current: Record<string, string>,
-): Difference[] {
-  const changes: Difference[] = [];
-  for (const [path, type] of Object.entries(baseline)) {
-    if (!(path in current)) {
-      changes.push({ path, kind: 'removed', expected: type });
-    } else if (current[path] !== type) {
-      changes.push({ path, kind: 'type-changed', expected: type, actual: current[path] });
-    }
-  }
-  return changes;
 }
 
 /* ------------------------------------------------------------------ */

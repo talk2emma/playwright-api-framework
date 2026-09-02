@@ -10,7 +10,6 @@
 import Ajv from 'ajv';
 import type { ErrorObject, ValidateFunction } from 'ajv';
 import addFormats from 'ajv-formats';
-import fs from 'node:fs';
 import type { ValidationResult } from '../types';
 
 /**
@@ -38,24 +37,12 @@ export function validateJsonSchema(schema: object, value: unknown): ValidationRe
 }
 
 /** Compiles once and caches, so repeated validation is cheap. */
-export function compile(schema: object): ValidateFunction {
+function compile(schema: object): ValidateFunction {
   const cached = compiled.get(schema);
   if (cached) return cached;
   const validate = ajv.compile(schema);
   compiled.set(schema, validate);
   return validate;
-}
-
-/** Loads a `.json` schema from disk and validates against it. */
-export function validateAgainstFile(schemaPath: string, value: unknown): ValidationResult {
-  const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as object;
-  return validateJsonSchema(schema, value);
-}
-
-/** Registers a schema under a `$id` so other schemas can `$ref` it. */
-export function addSchema(schema: object, id?: string): void {
-  if (id) ajv.addSchema(schema, id);
-  else ajv.addSchema(schema);
 }
 
 /**
@@ -65,7 +52,7 @@ export function addSchema(schema: object, id?: string): void {
  * `message`, with the useful specifics in `params`; joined up, they read like
  * a sentence instead of a debug dump.
  */
-export function formatAjvErrors(errors: ErrorObject[]): string[] {
+function formatAjvErrors(errors: ErrorObject[]): string[] {
   return errors.map((error) => {
     const where =
       error.instancePath === ''

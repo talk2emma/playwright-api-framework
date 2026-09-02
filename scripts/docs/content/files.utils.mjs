@@ -121,7 +121,7 @@ leafPaths(payload);                      // every leaf path, for shape compariso
       },
       {
         type: 'p',
-        text: '`leafPaths` is what `shapeOf` and `ApiResponse.fields()` are built on: it turns a payload into the set of paths it contains, which is the thing worth comparing against a baseline.',
+        text: '`leafPaths` is what `ApiResponse.fields()` is built on: it turns a payload into the set of paths it contains, which is the thing worth comparing against a baseline.',
       },
     ],
     changeWhen: ['A path expression the framework needs is not supported.'],
@@ -221,8 +221,9 @@ leafPaths(payload);                      // every leaf path, for shape compariso
       {
         type: 'code',
         caption: 'One path syntax for both formats',
-        text: `xmlPath(body, 'Envelope.Body.GetPriceResponse.Price');
-xmlPath(body, 'catalog.item[0].@id');`,
+        text: `const body = parseXml(response.text());
+readPath(body, 'Envelope.Body.GetPriceResponse.Price');
+readPath(body, 'catalog.item[0].@id');`,
       },
       { type: 'h3', text: 'SOAP faults' },
       {
@@ -231,7 +232,7 @@ xmlPath(body, 'catalog.item[0].@id');`,
       },
       {
         type: 'note',
-        text: 'Serialisation is written by hand rather than taken from the parser package, whose builder is deprecated in favour of a separate dependency. It is thirty lines, it escapes all five reserved characters, and it removes a dependency.',
+        text: 'This module parses; it does not serialise. An envelope builder lived here and no test ever sent SOAP, so it was removed. Add one back alongside `parseXml` when a test needs to send a request rather than read a response.',
       },
     ],
     changeWhen: [
@@ -240,8 +241,7 @@ xmlPath(body, 'catalog.item[0].@id');`,
     ],
     changeHow: [
       {
-        text: 'For SOAP 1.2, add an envelope builder alongside `soapEnvelope` with the 1.2 namespace.',
-        code: `buildXml({ 'soap:Envelope': { '@xmlns:soap': 'http://www.w3.org/2003/05/soap-envelope', 'soap:Body': body } });`,
+        text: "For SOAP 1.2, add an envelope builder beside `parseXml`, escaping all five reserved characters. Write it by hand rather than pulling in the parser package's builder, which is deprecated in favour of a separate dependency.",
       },
       {
         text: 'To keep prefixes, set `removeNSPrefix: false` — and expect every path in the suite to need updating.',
@@ -254,79 +254,6 @@ xmlPath(body, 'catalog.item[0].@id');`,
     ],
     related: ['src/core/api.response.ts', 'src/utils/jsonpath.utils.ts'],
   },
-
-  'src/utils/retry.utils.ts': {
-    group: 'utils',
-    purpose:
-      'Polling and retrying: `waitFor`, `waitUntil`, `waitUntilGone`, `retry`, `withTimeout`, `sleep` and `mapWithConcurrency`.',
-    blocks: [
-      {
-        type: 'rule',
-        text: 'Never sleep for a fixed duration when you can poll for the thing you are actually waiting for. A sleep is too short on a slow day, too long on every other, and silent about what it is waiting for.',
-      },
-      {
-        type: 'code',
-        caption: 'waitFor returns the value, so the wait and the read are one step',
-        text: `const order = await waitFor(() => api.orders.find(id), {
-  description: \`order \${id} to appear in the index\`,
-  timeout: TIMEOUTS.POLL_TIMEOUT,
-  interval: 250,
-});`,
-      },
-      {
-        type: 'table',
-        head: ['Helper', 'For'],
-        rows: [
-          ['`waitFor(probe)`', 'Poll until a probe returns something truthy; returns it'],
-          ['`waitUntil(read, predicate)`', 'Poll a value until a predicate holds'],
-          ['`waitUntilGone(exists)`', 'Poll until something stops existing'],
-          [
-            '`retry(operation, options)`',
-            'Exponential backoff with jitter, for genuinely transient work',
-          ],
-          ['`withTimeout(operation, ms)`', 'A hard deadline on something that could hang'],
-          ['`sleep(ms)`', 'A plain delay — see below'],
-          ['`mapWithConcurrency(items, limit, worker)`', 'Fan out with a ceiling'],
-        ],
-      },
-      { type: 'h3', text: 'Why sleep is exported at all' },
-      {
-        type: 'p',
-        text: 'A few situations genuinely need one: respecting a documented rate-limit window, or letting a clock tick past a whole second before asserting on a timestamp. If you are reaching for it to make a test pass, reach for `waitFor` instead.',
-      },
-      { type: 'h3', text: 'mapWithConcurrency' },
-      {
-        type: 'p',
-        text: "Seeding a hundred records with `Promise.all` will trip the API's rate limit and produce a wall of 429s that look like product failures. This keeps the fan-out deliberate.",
-      },
-      {
-        type: 'code',
-        text: `const users = await mapWithConcurrency(rows, 5, (row) => api.users.create(row));`,
-      },
-      {
-        type: 'warn',
-        text: '`retry` is for transient *work*, never for assertions. Retrying until a test passes is how a real defect gets shipped.',
-      },
-    ],
-    changeWhen: [
-      'A polling pattern repeats across tests.',
-      'The default interval or timeout is systematically wrong.',
-    ],
-    changeHow: [
-      { text: 'Change the named budget in `src/config/timeouts.ts` rather than the call sites.' },
-      {
-        text: 'Add a helper only when the pattern is genuinely common — three occurrences, not two.',
-      },
-    ],
-    why: 'Eventual consistency is the main cause of flaky API suites, and polling is the only honest answer to it. Making the polling helper return the value it waited for is what stops tests polling and then re-reading.',
-    gotchas: [
-      '`ignoreErrors` is off by default, so a probe that throws fails immediately. Turn it on only when the error is genuinely expected while waiting.',
-      '`withTimeout` stops the caller waiting; it cannot cancel the underlying work, because nothing in JavaScript can.',
-      '`PollTimeoutError` includes the last value seen, which is usually the whole diagnosis.',
-    ],
-    related: ['src/config/timeouts.ts', 'src/core/errors.ts'],
-  },
-
   'src/utils/pagination.utils.ts': {
     group: 'utils',
     purpose:
@@ -344,12 +271,7 @@ xmlPath(body, 'catalog.item[0].@id');`,
             '`followLinkHeader`',
             'RFC 8288 `rel="next"` — the only style needing no knowledge of the API\'s parameters',
           ],
-          ['`followCursor`', 'Opaque cursors, with repeat detection'],
           ['`followOffset`', 'Offset/limit, stopping when a short page comes back'],
-          [
-            '`readPageEnvelope`',
-            'Reads `items`/`data`/`results`/`content` and the common cursor and total field names into one `Page<T>`',
-          ],
         ],
       },
       { type: 'h3', text: 'The defect detector' },
@@ -385,7 +307,6 @@ expect(defects.uniqueItems).toBe(defects.totalItems);`,
     why: 'Pagination is where the difference between "the endpoint works" and "the endpoint works at scale" shows up, and it is almost never covered because walking pages by hand in a test is tedious. Making it one line removes the excuse.',
     gotchas: [
       'The ceiling logs a warning when hit rather than throwing, so a legitimate large dataset produces partial results with a visible reason.',
-      '`readPageEnvelope` guesses field names. A service with an unusual shape should pass `itemsPath` explicitly.',
     ],
     related: ['src/utils/header.utils.ts', 'src/services/template.service.ts'],
   },
@@ -425,14 +346,6 @@ const invalid = without(buildUser(), 'email');   // for a missing-field test`,
             'Quotes, backslashes, combining marks, RTL text, zero-width characters, emoji sequences, a 5000-character string, `${…}` template syntax',
           ],
           [
-            '`EDGE_CASE_NUMBERS`',
-            'Zero, negatives, `MAX_SAFE_INTEGER`, one past it (as a **string**, because JavaScript cannot represent it), float error, extremes',
-          ],
-          [
-            '`EDGE_CASE_DATES`',
-            'The epoch, a leap day, a leap second, the far future, before the epoch, both offset directions',
-          ],
-          [
             '`INJECTION_PAYLOADS`',
             'SQL, NoSQL, XSS, path traversal, command injection, template injection, LDAP, CRLF, XXE',
           ],
@@ -440,7 +353,7 @@ const invalid = without(buildUser(), 'email');   // for a missing-field test`,
       },
       {
         type: 'note',
-        text: '`beyondSafeInteger` is a string on purpose. `9007199254740993` cannot be written as a JavaScript literal without losing precision — which is the point of the test: send it as a string and check whether the API round-trips it or silently rewrites it to `…992`.',
+        text: 'Numeric and date edge-case collections lived here too and no test read them, so they were removed. If you add one back, remember that `9007199254740993` cannot be written as a JavaScript literal without losing precision — send it as a string and check whether the API round-trips it or silently rewrites it to `…992`.',
       },
     ],
     changeWhen: [
@@ -449,8 +362,8 @@ const invalid = without(buildUser(), 'email');   // for a missing-field test`,
     ],
     changeHow: [
       {
-        text: 'Add a factory with `defineFactory`, taking a Faker instance so it stays deterministic.',
-        code: `export const buildInvoice = defineFactory((source) => ({\n  reference: \`INV-\${source.string.numeric(6)}\`,\n  dueDate: source.date.soon({ days: 30 }).toISOString(),\n  totalMinor: source.number.int({ min: 100, max: 500_000 }),\n}));`,
+        text: 'Add a factory beside `buildUser`, taking a seeded Faker instance so it stays deterministic.',
+        code: `export function buildInvoice(source: Faker) {\n  return {\n    reference: \`INV-\${source.string.numeric(6)}\`,\n    dueDate: source.date.soon({ days: 30 }).toISOString(),\n    totalMinor: source.number.int({ min: 100, max: 500_000 }),\n  };\n}`,
       },
       {
         text: 'Add edge cases to the existing collections rather than creating a new one, so a table-driven test picks them up automatically.',
@@ -459,7 +372,7 @@ const invalid = without(buildUser(), 'email');   // for a missing-field test`,
     why: 'Edge-case collections are institutional memory. Every entry is a bug somebody already found; keeping them in one place means the next service gets tested against all of them for free.',
     gotchas: [
       'The `data` fixture is seeded per test. Importing the global `faker` directly loses that determinism.',
-      '`uniqueId` and `uniqueEmail` use the clock and randomness, so they are unique but **not** reproducible — which is right for a value that must not collide across runs.',
+      '`uniqueId` uses the clock and randomness, so it is unique but **not** reproducible — which is right for a value that must not collide across runs.',
     ],
     related: ['src/fixtures/api.fixture.ts', 'src/utils/security.utils.ts'],
   },
@@ -536,20 +449,19 @@ routeOf('https://api/v1/orders/3f2b…-a1c9/items')            // '/v1/orders/{u
       },
       {
         type: 'p',
-        text: '`VOLATILE_FIELDS` covers ids, timestamps, trace ids and etags. Without ignoring them every diff is noise, and a diff nobody reads is a check nobody has.',
+        text: 'Pass `ignore` for the fields that change on every run — ids, timestamps, trace ids, etags. Without ignoring them every diff is noise, and a diff nobody reads is a check nobody has. `*.name` matches at any depth and `prefix*` matches a prefix.',
       },
-      { type: 'h3', text: 'Shape comparison — the one worth running in CI' },
       {
         type: 'code',
-        caption: 'Values change legitimately; shapes should not',
-        text: `const baseline = shapeOf(before);   // { 'items[].id': 'number', 'items[].name': 'string' }
-const current = shapeOf(after);
-
-expect(breakingChanges(baseline, current)).toEqual([]);`,
+        caption: 'Ignore what churns, compare the rest',
+        text: `expect(current).toMatchPayload(baseline, {
+  ignore: ['id', '*.createdAt', 'meta.traceId'],
+  nullIsAbsent: true,
+});`,
       },
       {
         type: 'p',
-        text: '`breakingChanges` reports only the two things that break consumers: a field **removed**, and a field whose **type changed**. Adding a field is not a breaking change and is not reported.',
+        text: 'A shape-comparison pair — deriving a type map and reporting only removed or retyped fields — lived here and was never called from a test. It was removed; `src/utils/jsonpath.utils.ts` still provides `leafPaths`, which is the piece such a check would be built on.',
       },
       { type: 'h3', text: 'Array comparison' },
       {
@@ -558,12 +470,12 @@ expect(breakingChanges(baseline, current)).toEqual([]);`,
       },
     ],
     changeWhen: [
-      'A field should be treated as volatile everywhere.',
+      'A field should be ignored everywhere.',
       'A different comparison semantic is needed.',
     ],
     changeHow: [
       {
-        text: 'Add to `VOLATILE_FIELDS`. `*.name` matches at any depth; `prefix*` matches a prefix.',
+        text: 'Pass it in `ignore` at the call site, or add a shared constant beside the matcher in `src/fixtures/custom-matchers.ts` if the whole suite should skip it.',
       },
       {
         text: 'Add a `DiffOptions` flag rather than a second function, so one walker keeps all the semantics.',
@@ -572,7 +484,7 @@ expect(breakingChanges(baseline, current)).toEqual([]);`,
     why: 'The failure message is the reason this exists. Finding one changed field inside a large response by eye is genuinely difficult; a diff makes it immediate.',
     gotchas: [
       'Unordered array matching is O(n²). For very large arrays, pass `strictArrayOrder` if order is in fact stable.',
-      '`shapeOf` collapses array indices to `[]`, so a two-item and a three-item response have the same shape — otherwise every list endpoint diffs against itself.',
+      'Paths collapse array indices to `[]`, so a two-item and a three-item response compare at the same paths — otherwise every list endpoint diffs against itself.',
     ],
     related: ['src/fixtures/custom-matchers.ts', 'src/utils/jsonpath.utils.ts'],
   },
@@ -663,76 +575,37 @@ expect(breakingChanges(baseline, current)).toEqual([]);`,
   'src/utils/file.utils.ts': {
     group: 'utils',
     purpose:
-      'Reading test data from disk and writing artefacts: JSON, CSV, NDJSON, temporary files, checksums.',
+      'Resolving a path against the repository root, so the suite behaves the same regardless of the working directory it was launched from.',
     blocks: [
       {
         type: 'p',
-        text: 'Files matter for two reasons: as *input*, when a suite is driven by a table of cases rather than by code, and as *evidence*, when a run should leave behind something a human can inspect.',
-      },
-      {
-        type: 'table',
-        head: ['Helper', 'For'],
-        rows: [
-          [
-            '`fromRoot`, `dataFile`',
-            'Resolving paths, so the suite works regardless of the working directory it was launched from',
-          ],
-          [
-            '`readJson`, `readCsv`, `readNdjson`',
-            'Loading data; a missing file names the path it looked in',
-          ],
-          ['`writeJson`', 'Writing, creating parent directories'],
-          ['`tempFile`, `tempFileOfSize`', 'A real file on disk for upload tests, deleted on exit'],
-          ['`checksum`, `fileSize`', 'Verifying a download round-tripped'],
-          ['`saveArtifact`', 'Writing evidence under `reports/artifacts/`'],
-        ],
-      },
-      {
-        type: 'p',
-        text: 'CSV is the right format for a data-driven suite because non-engineers can edit it: a product owner adding a tax-rate case should not have to open a TypeScript file.',
+        text: 'The whole module is `fromRoot`. It is used by `global.setup.ts` to create the report directories and by `api.fixture.ts` to find an optional OpenAPI specification — both of which run before anything has established a working directory.',
       },
       {
         type: 'code',
-        caption: 'A table-driven test',
-        text: `for (const testCase of readCsv<Case>(dataFile('status-codes.csv'))) {
-  test(\`\${testCase.scenario} @regression\`, async ({ http }) => {
-    const response = await http.request(testCase.method, testCase.path).send();
-    expect(response).toHaveStatus(Number(testCase.expectedStatus));
-  });
-}`,
+        caption: 'The whole module',
+        text: `fs.mkdirSync(fromRoot('reports', 'artifacts'), { recursive: true });
+const spec = fromRoot('src', 'data', 'openapi.json');`,
+      },
+      {
+        type: 'p',
+        text: 'This module used to carry readers for JSON, CSV and NDJSON, temporary-file builders, checksums and an artefact writer, alongside a `src/data/` folder of fixtures to feed them. No test read any of it, so the helpers, the fixtures and the `csv-parse` dependency were removed together.',
       },
       {
         type: 'note',
-        text: '`tempFileOfSize` exists so an upload-limit test does not need a large binary in the repository. A multi-megabyte fixture slows every clone forever.',
+        text: 'If a data-driven suite is wanted later, add the reader in the same change as the first test that calls it. A reader with no caller is indistinguishable from a reader nobody needs — which is exactly how the previous set accumulated.',
       },
     ],
-    changeWhen: ['A new data format is needed.', 'Artefacts should go somewhere else.'],
+    changeWhen: ['A test needs to read a data file, or a run should leave an artefact behind.'],
     changeHow: [
       {
-        text: 'Add a reader following the same shape: resolve the path, check existence with a message naming it, parse, return typed.',
+        text: 'Add the reader here: resolve the path through `fromRoot`, check existence with an error naming the path it looked in, parse, and return a typed value.',
       },
       {
-        text: 'Prefer adding a format to adding a dependency — CSV, JSON and NDJSON cover almost everything.',
+        text: 'For an upload-limit test, generate the file at run time rather than committing a multi-megabyte fixture that slows every clone forever.',
       },
     ],
-    why: 'Path resolution through `fromRoot` is what makes the suite indifferent to where it was launched from. Relative paths in tests break the moment somebody runs a single spec from a subdirectory.',
-    gotchas: [
-      'CSV values are all strings; `cast: false` is deliberate, so a case table can distinguish "no value" from "the empty string". Convert explicitly.',
-      'Temporary files are removed on process exit — best effort. A killed process leaves them for the OS.',
-    ],
-    related: ['src/data/README.md', 'src/mocks/recorder.ts'],
-  },
-
-  'src/utils/index.ts': {
-    group: 'utils',
-    purpose: 'Barrel for the utility layer.',
-    changeWhen: ['You add a utility module or an export.'],
-    changeHow: [
-      {
-        text: "Re-export it explicitly rather than with `export *`, so the module's public surface stays visible in one place.",
-      },
-    ],
-    why: 'Explicit re-exports make the barrel a readable index of what the layer offers, and stop an internal helper leaking into the public surface by accident.',
-    related: ['src/utils/logger.ts'],
+    why: 'Path resolution is the one file concern every entry point genuinely shares. Everything else was speculative.',
+    related: ['src/hooks/global.setup.ts', 'src/fixtures/api.fixture.ts'],
   },
 };

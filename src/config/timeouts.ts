@@ -39,5 +39,3 @@ export const TIMEOUTS = {
   /** How long a WebSocket wait-for-message call blocks. */
   SOCKET_MESSAGE: 10_000,
 } as const;
-
-export type TimeoutName = keyof typeof TIMEOUTS;

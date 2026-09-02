@@ -8,13 +8,6 @@
  */
 import type { HeaderMap } from '../types';
 
-/** Lower-cases every key so lookups are case-insensitive from then on. */
-export function normalizeHeaders(headers: Record<string, string>): HeaderMap {
-  const out: HeaderMap = {};
-  for (const [key, value] of Object.entries(headers)) out[key.toLowerCase()] = value;
-  return out;
-}
-
 /** Case-insensitive single header lookup. */
 export function getHeader(headers: HeaderMap, name: string): string | undefined {
   const target = name.toLowerCase();
@@ -93,7 +86,7 @@ function capitalizeSameSite(value: string): 'Strict' | 'Lax' | 'None' | undefine
 }
 
 /** `application/json; charset=utf-8` split into its media type and parameters. */
-export interface ParsedContentType {
+interface ParsedContentType {
   readonly mediaType: string;
   readonly charset?: string;
   readonly boundary?: string;
@@ -127,7 +120,7 @@ export function isJsonContentType(raw: string | undefined): boolean {
 }
 
 /** One relation from an RFC 8288 `Link` header. */
-export interface LinkRelation {
+interface LinkRelation {
   readonly url: string;
   readonly rel: string;
   readonly parameters: Record<string, string>;
@@ -199,7 +192,7 @@ export function parseRateLimit(headers: HeaderMap, now = Date.now()): RateLimitI
 }
 
 /** Redacts credentials before headers reach a log or a report attachment. */
-export const SENSITIVE_HEADERS = [
+const SENSITIVE_HEADERS = [
   'authorization',
   'proxy-authorization',
   'cookie',
@@ -220,7 +213,7 @@ export function redactHeaders(headers: HeaderMap): HeaderMap {
 }
 
 /** Keeps enough of a value to correlate it in logs without exposing it. */
-export function redactValue(value: string): string {
+function redactValue(value: string): string {
   if (value.length <= 8) return '***';
   return `${value.slice(0, 4)}…${value.slice(-2)} (${value.length} chars, redacted)`;
 }

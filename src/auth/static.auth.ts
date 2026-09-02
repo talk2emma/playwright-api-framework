@@ -32,26 +32,7 @@ export class BasicAuth implements AuthProvider {
   }
 }
 
-/**
- * A fixed bearer token.
- *
- * The token can be supplied as a function, which is what makes this usable
- * with a session captured in global setup: the value is read at request time,
- * so a refreshed token is picked up without rebuilding the client.
- */
-export class BearerAuth implements AuthProvider {
-  readonly name = 'bearer';
-
-  constructor(private readonly token: string | (() => string | Promise<string>)) {}
-
-  async headers(): Promise<HeaderMap> {
-    const value = typeof this.token === 'function' ? await this.token() : this.token;
-    if (!value) throw new ConfigurationError('BearerAuth was given an empty token.');
-    return { authorization: `Bearer ${value}` };
-  }
-}
-
-export interface ApiKeyOptions {
+interface ApiKeyOptions {
   /** Where the key goes. Header is the default and the safer choice. */
   readonly in?: 'header' | 'query';
   /** Header or query parameter name. */

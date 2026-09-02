@@ -1,8 +1,0 @@
-scenario,method,path,payload,expectedStatus,note
-missing required field,POST,/users,{},422,server must reject an empty body
-unknown field,POST,/users,{"nope":true},422,unknown fields are not silently ignored
-invalid email,POST,/users,{"email":"not-an-email"},422,format validation
-duplicate email,POST,/users,{"email":"seed.admin@example.com"},409,uniqueness conflict
-unknown resource,GET,/users/000000,,404,absent resource
-bad identifier,GET,/users/not-an-id,,400,malformed identifier
-method not allowed,PATCH,/health,,405,verb not supported on this path

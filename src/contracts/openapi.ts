@@ -18,7 +18,7 @@ import { validateJsonSchema } from './json-schema';
 import { matchesPath } from './schema.registry';
 
 /** One operation from the document, flattened into what validation needs. */
-export interface OperationDescriptor {
+interface OperationDescriptor {
   readonly method: HttpMethod;
   /** Templated path exactly as written in the document, e.g. `/users/{id}`. */
   readonly path: string;

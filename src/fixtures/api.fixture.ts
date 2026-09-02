@@ -37,7 +37,7 @@ import type { WebSocketOptions } from '../protocols/websocket.client';
 import { OpenApiContract } from '../contracts/openapi';
 import { findSchema } from '../contracts/schema.registry';
 import { TokenStore } from '../auth/token.store';
-import { BasicAuth, BearerAuth, NoAuth, ApiKeyAuth } from '../auth/static.auth';
+import { BasicAuth, NoAuth, ApiKeyAuth } from '../auth/static.auth';
 import { OAuth2Auth } from '../auth/oauth2.auth';
 import { UserService } from '../services/template.service';
 import { ObjectService } from '../services/object.service';
@@ -51,7 +51,7 @@ import { logger } from '../utils/logger';
 import type { Logger } from '../utils/logger';
 
 /** Every service object, reachable from one place. */
-export interface ServiceRegistry {
+interface ServiceRegistry {
   /**
    * The live CRUD resource on the `demo` environment. The lifecycle suite
    * runs against this one because its writes genuinely persist.
@@ -67,7 +67,7 @@ export interface ServiceRegistry {
 }
 
 /** Fixtures rebuilt for every test. */
-export interface ApiFixtures {
+interface ApiFixtures {
   /** Deterministic data generator, seeded from the test's own title. */
   data: Faker;
   /** Scoped logger, prefixed with the test's name. */
@@ -103,7 +103,7 @@ export interface ApiFixtures {
 }
 
 /** Fixtures built once per worker process. */
-export interface WorkerFixtures {
+interface WorkerFixtures {
   /** Token cache shared by every test in this worker. */
   tokens: TokenStore;
   /** A request context that outlives individual tests, for worker-level setup. */
@@ -347,7 +347,7 @@ export const test = base.extend<ApiFixtures, WorkerFixtures>({
  * then basic credentials, then nothing. Choosing here rather than in each test
  * means moving an environment from API keys to OAuth is a `.env` change.
  */
-export function defaultAuthProvider(request: APIRequestContext, tokens: TokenStore): AuthProvider {
+function defaultAuthProvider(request: APIRequestContext, tokens: TokenStore): AuthProvider {
   if (config.oauth.tokenUrl && config.oauth.clientId) {
     return OAuth2Auth.clientCredentials(request, { store: tokens });
   }
@@ -358,6 +358,3 @@ export function defaultAuthProvider(request: APIRequestContext, tokens: TokenSto
   }
   return new NoAuth();
 }
-
-/** Re-exported so a test can build a bearer client from a captured token. */
-export { BearerAuth };

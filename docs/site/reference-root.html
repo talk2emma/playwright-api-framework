@@ -1200,7 +1200,7 @@ body.print details.api > summary {
     <nav aria-label="Documentation"><ul class="nav"><li><a href="index.html">Overview</a></li><li><a href="architecture.html">Architecture</a></li><li><a href="worked-example.html">Worked example</a></li><li><a href="structure.html">Project structure</a></li><li><a href="reference-root.html" aria-current="page">Reference: configuration &amp; tooling</a></li><li><a href="reference-foundation.html">Reference: config, core &amp; types</a></li><li><a href="reference-auth.html">Reference: authentication &amp; contracts</a></li><li><a href="reference-protocols.html">Reference: protocols, services &amp; fixtures</a></li><li><a href="reference-utils.html">Reference: utilities, stubbing &amp; reporting</a></li><li><a href="reference-tests.html">Reference: tests &amp; repository docs</a></li><li><a href="playbooks.html">Playbooks</a></li><li><a href="conventions.html">Conventions</a></li><li><a href="troubleshooting.html">Troubleshooting</a></li><li><a href="api-index.html">API index</a></li><li><a href="glossary.html">Glossary</a></li></ul></nav>
     <div class="sidebar-foot">
       <a href="playwright-api-framework-documentation.pdf" download>Download PDF</a>
-      <span>Generated 2026-09-01</span>
+      <span>Generated 2026-09-02</span>
     </div>
   </aside>
   <main id="main">
@@ -1258,7 +1258,7 @@ trim_trailing_whitespace <span class="tok-o">=</span> <span class="tok-k">false<
   <div class="change"><h4>How to change it</h4><ol class="steps"><li><p>Add the pattern with a comment explaining the category.</p></li><li><p>If the file was already tracked, ignoring it is not enough — untrack it, then rotate anything secret it contained.</p><pre><code><span class="tok-f">git</span> rm <span class="tok-a">--cached</span> storage/session-staging.json</code></pre></li></ol></div>
   <div class="change why"><h4>Why the change belongs here</h4><p>A <code>.gitignore</code> is the last line of defence against a credential leak, and it only works before the first commit of the file. Adding a directory here at the same time as the code that writes into it is the habit that keeps it working.</p></div>
   <div class="change gotcha"><h4>Watch out for</h4><ul><li>Ignoring a file does not remove it from history. If a secret was committed, rotate it — deletion does not help.</li><li>The <code>!.env.example</code> negation must come after the <code>.env*</code> pattern, or the template is ignored too.</li></ul></div>
-  <p class="related">Related: <code>.env.example</code> &middot; <code>src/auth/token.store.ts</code> &middot; <code>src/auth/session.auth.ts</code></p>
+  <p class="related">Related: <code>.env.example</code> &middot; <code>src/auth/token.store.ts</code></p>
   
 </section>
 
@@ -1339,7 +1339,7 @@ trim_trailing_whitespace <span class="tok-o">=</span> <span class="tok-k">false<
 <section class="file" id="f-package-json">
   <header class="file-head">
     <h3><code>package.json</code></h3>
-    <span class="file-meta">75 lines</span>
+    <span class="file-meta">72 lines</span>
   </header>
   <p class="file-purpose">Declares every dependency and every command. In practice this is the framework's table of contents: if a task is worth doing twice, it has a script here.</p>
   <h3 id="script-groups">Script groups</h3>
@@ -1711,7 +1711,7 @@ trim_trailing_whitespace <span class="tok-o">=</span> <span class="tok-k">false<
 <section class="file" id="f-scripts-docs-render-mjs">
   <header class="file-head">
     <h3><code>scripts/docs/render.mjs</code></h3>
-    <span class="file-meta">197 lines &middot; 9 exports</span>
+    <span class="file-meta">197 lines &middot; 6 exports</span>
   </header>
   <p class="file-purpose">Turns content blocks and extracted API entries into HTML. Shared by the multi-page site, the print sheet and the hosted manual, so all three are generated from one source and cannot disagree.</p>
   <h3 id="block-types">Block types</h3>
@@ -1725,13 +1725,13 @@ trim_trailing_whitespace <span class="tok-o">=</span> <span class="tok-k">false<
   <div class="change why"><h4>Why the change belongs here</h4><p>One renderer for three outputs is what guarantees the PDF, the site and the hosted manual say the same thing. Three renderers would drift within a release.</p></div>
   <div class="change gotcha"><h4>Watch out for</h4><ul><li><code>inline()</code> escapes before applying markup, so raw HTML in content is shown rather than rendered. That is intentional.</li><li>A new block type needs styles in both stylesheets, or it will look correct in one output and unstyled in the other.</li></ul></div>
   <p class="related">Related: <code>scripts/docs/highlight.mjs</code> &middot; <code>scripts/docs/build-docs.mjs</code> &middot; <code>scripts/docs/docs.css</code></p>
-  <details class="api"><summary>API surface (9 exports)</summary><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">codeBlock</span>(text, { caption, lang } <span class="tok-o">=</span> {})</code></div><p class="api-doc">Renders a syntax-highlighted code block with its language labelled.</p></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">esc</span>(value <span class="tok-o">=</span> <span class="tok-s">''</span>)</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">inline</span>(text <span class="tok-o">=</span> <span class="tok-s">''</span>)</code></div><p class="api-doc">Inline markup: <code>code</code>, <strong>bold</strong>, <a href="href">text</a>.</p></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">renderBlock</span>(block)</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">renderBlocks</span>(blocks <span class="tok-o">=</span> [])</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">slug</span>(text <span class="tok-o">=</span> <span class="tok-s">''</span>)</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">fileAnchor</span>(filePath)</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">renderApi</span>(entry)</code></div><p class="api-doc">Renders the auto-extracted API surface of one source file.</p></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">renderFileEntry</span>(filePath, doc, apiEntry)</code></div><p class="api-doc">Renders one documented file: purpose, change guidance and API.</p></div></details>
+  <details class="api"><summary>API surface (6 exports)</summary><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">esc</span>(value <span class="tok-o">=</span> <span class="tok-s">''</span>)</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">inline</span>(text <span class="tok-o">=</span> <span class="tok-s">''</span>)</code></div><p class="api-doc">Inline markup: <code>code</code>, <strong>bold</strong>, <a href="href">text</a>.</p></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">renderBlocks</span>(blocks <span class="tok-o">=</span> [])</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">slug</span>(text <span class="tok-o">=</span> <span class="tok-s">''</span>)</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">fileAnchor</span>(filePath)</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-fn">function</span><code><span class="tok-f">renderFileEntry</span>(filePath, doc, apiEntry)</code></div><p class="api-doc">Renders one documented file: purpose, change guidance and API.</p></div></details>
 </section></div>
     <footer class="page-foot">
       <div class="pager">
         <a class="prev" href="structure.html">&larr; Project structure</a><a class="next" href="reference-foundation.html">Reference: config, core &amp; types &rarr;</a>
       </div>
-      <p>Generated from source by <code>npm run docs</code>. 104 files documented, 367 exports extracted.</p>
+      <p>Generated from source by <code>npm run docs</code>. 89 files documented, 150 exports extracted.</p>
     </footer>
   </main>
 </div>

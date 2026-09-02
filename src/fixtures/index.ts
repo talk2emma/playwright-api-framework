@@ -8,6 +8,5 @@
  * ESLint rule enforces it: a test that imports Playwright directly silently
  * loses the cleanup registry, the contract guard and every custom matcher.
  */
-export { test, defaultAuthProvider, BearerAuth } from './api.fixture';
-export type { ApiFixtures, WorkerFixtures, ServiceRegistry } from './api.fixture';
+export { test } from './api.fixture';
 export { expect } from './custom-matchers';
