@@ -68,6 +68,16 @@ interface ServiceRegistry {
 
 /** Fixtures rebuilt for every test. */
 interface ApiFixtures {
+  /**
+   * Whether the automatic contract guard runs for this test.
+   *
+   * Defaults to `STRICT_CONTRACTS`. Override it with
+   * `test.use({ strictContracts: false })` in the one situation where a test
+   * *deliberately* produces a non-conforming response in order to prove the
+   * validator rejects it — otherwise the guard fires first and the test can
+   * never reach its own assertion.
+   */
+  strictContracts: boolean;
   /** Deterministic data generator, seeded from the test's own title. */
   data: Faker;
   /** Scoped logger, prefixed with the test's name. */
@@ -309,9 +319,11 @@ export const test = base.extend<ApiFixtures, WorkerFixtures>({
    * `STRICT_CONTRACTS` decides whether it actually runs — off locally so a
    * work-in-progress schema does not block a developer, on in CI.
    */
+  strictContracts: [config.strictContracts, { option: true }],
+
   contractGuard: [
-    async ({ http, log }, use): Promise<void> => {
-      if (config.strictContracts) {
+    async ({ http, log, strictContracts }, use): Promise<void> => {
+      if (strictContracts) {
         http.onResponse((response) => {
           const registered = findSchema(response.request.method, response.url, response.status);
           if (!registered) return;

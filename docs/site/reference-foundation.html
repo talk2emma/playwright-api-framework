@@ -1200,7 +1200,7 @@ body.print details.api > summary {
     <nav aria-label="Documentation"><ul class="nav"><li><a href="index.html">Overview</a></li><li><a href="architecture.html">Architecture</a></li><li><a href="worked-example.html">Worked example</a></li><li><a href="structure.html">Project structure</a></li><li><a href="reference-root.html">Reference: configuration &amp; tooling</a></li><li><a href="reference-foundation.html" aria-current="page">Reference: config, core &amp; types</a></li><li><a href="reference-auth.html">Reference: authentication &amp; contracts</a></li><li><a href="reference-protocols.html">Reference: protocols, services &amp; fixtures</a></li><li><a href="reference-utils.html">Reference: utilities, stubbing &amp; reporting</a></li><li><a href="reference-tests.html">Reference: tests &amp; repository docs</a></li><li><a href="playbooks.html">Playbooks</a></li><li><a href="conventions.html">Conventions</a></li><li><a href="troubleshooting.html">Troubleshooting</a></li><li><a href="api-index.html">API index</a></li><li><a href="glossary.html">Glossary</a></li></ul></nav>
     <div class="sidebar-foot">
       <a href="playwright-api-framework-documentation.pdf" download>Download PDF</a>
-      <span>Generated 2026-09-02</span>
+      <span>Generated 2026-09-04</span>
     </div>
   </aside>
   <main id="main">
@@ -1215,7 +1215,7 @@ body.print details.api > summary {
 <section class="file" id="f-src-config-env-config-ts">
   <header class="file-head">
     <h3><code>src/config/env.config.ts</code></h3>
-    <span class="file-meta">221 lines &middot; 5 exports</span>
+    <span class="file-meta">222 lines &middot; 5 exports</span>
   </header>
   <p class="file-purpose">The only file in the framework that reads <code>process.env</code>. It loads the env files, validates everything against a Zod schema, and exports a frozen <code>config</code> object plus <code>getUser(role)</code>.</p>
   <h3 id="what-it-does-in-order">What it does, in order</h3>
@@ -1257,7 +1257,7 @@ body.print details.api > summary {
 <section class="file" id="f-src-config-environments-ts">
   <header class="file-head">
     <h3><code>src/config/environments.ts</code></h3>
-    <span class="file-meta">141 lines &middot; 5 exports</span>
+    <span class="file-meta">159 lines &middot; 5 exports</span>
   </header>
   <p class="file-purpose">The table of named targets — <code>demo</code>, <code>local</code>, <code>mock</code>, <code>dev</code>, <code>staging</code>, <code>production</code> — holding URLs, path prefixes, TLS behaviour, latency budgets and the read-only flag, plus the public APIs the demonstration suite reaches alongside them.</p>
   <aside class="callout rule"><span class="callout-tag">Rule</span><div>Only non-secret values belong here. Anything that would be dangerous in a pull request — keys, passwords, tokens — is read from the process environment instead. This file is committed and reviewed like any other.</div></aside>
@@ -1288,7 +1288,8 @@ body.print details.api > summary {
 <span class="tok-k">readonly</span> <span class="tok-p">apiPrefix</span><span class="tok-o">:</span> <span class="tok-t">string</span>;
 <span class="tok-k">readonly</span> <span class="tok-p">verifyTls</span><span class="tok-o">:</span> <span class="tok-t">boolean</span>;
 <span class="tok-k">readonly</span> <span class="tok-p">latencyBudgetMs</span><span class="tok-o">:</span> <span class="tok-t">number</span>;
-<span class="tok-k">readonly</span> <span class="tok-p">readOnly</span><span class="tok-o">:</span> <span class="tok-t">boolean</span>;</code></pre></div><div class="api-item"><div class="api-head"><span class="badge badge-const">const</span><code>ENVIRONMENTS</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-type">type</span><code>EnvironmentName</code></div><pre class="api-shape"><code><span class="tok-k">keyof</span> <span class="tok-k">typeof</span> <span class="tok-t">ENVIRONMENTS</span></code></pre></div><div class="api-item"><div class="api-head"><span class="badge badge-const">const</span><code>PUBLIC_APIS</code></div><p class="api-doc">Additional public APIs the demonstration suite reaches directly. These are *not* environments, because <code>TEST_ENV</code> selects exactly one target and these are used alongside it. A spec reaches them with <code>http.withBaseUrl(PUBLIC_APIS.jsonPlaceholder)</code>, which produces a derived client that keeps the run's observers — latency, recording, contract guard — attached. Each one is here because it demonstrates something the primary target cannot, and for no other reason.</p></div><div class="api-item"><div class="api-head"><span class="badge badge-const">const</span><code>ENVIRONMENT_NAMES</code></div></div></details>
+<span class="tok-k">readonly</span> <span class="tok-p">readOnly</span><span class="tok-o">:</span> <span class="tok-t">boolean</span>;
+<span class="tok-k">readonly</span> <span class="tok-p">requiresLiveTarget</span><span class="tok-o">:</span> <span class="tok-t">boolean</span>;</code></pre></div><div class="api-item"><div class="api-head"><span class="badge badge-const">const</span><code>ENVIRONMENTS</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-type">type</span><code>EnvironmentName</code></div><pre class="api-shape"><code><span class="tok-k">keyof</span> <span class="tok-k">typeof</span> <span class="tok-t">ENVIRONMENTS</span></code></pre></div><div class="api-item"><div class="api-head"><span class="badge badge-const">const</span><code>PUBLIC_APIS</code></div><p class="api-doc">Additional public APIs the demonstration suite reaches directly. These are *not* environments, because <code>TEST_ENV</code> selects exactly one target and these are used alongside it. A spec reaches them with <code>http.withBaseUrl(PUBLIC_APIS.jsonPlaceholder)</code>, which produces a derived client that keeps the run's observers — latency, recording, contract guard — attached. Each one is here because it demonstrates something the primary target cannot, and for no other reason.</p></div><div class="api-item"><div class="api-head"><span class="badge badge-const">const</span><code>ENVIRONMENT_NAMES</code></div></div></details>
 </section>
 
 <section class="file" id="f-src-config-timeouts-ts">

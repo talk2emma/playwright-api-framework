@@ -24,6 +24,15 @@ export interface EnvironmentDefinition {
   readonly latencyBudgetMs: number;
   /** Set for environments where destructive verbs must never be issued. */
   readonly readOnly: boolean;
+  /**
+   * Whether a real server must answer at `apiBaseUrl` before the run starts.
+   *
+   * False only for targets the suite stands up itself. `global.setup.ts` skips
+   * its reachability probe for those — otherwise a suite that deliberately
+   * stubs every response still refuses to start because nothing is listening
+   * on a port it never intended to use.
+   */
+  readonly requiresLiveTarget: boolean;
 }
 
 export const ENVIRONMENTS = {
@@ -49,6 +58,7 @@ export const ENVIRONMENTS = {
      * the suite should not fail because somebody else is using it. */
     latencyBudgetMs: 5000,
     readOnly: false,
+    requiresLiveTarget: true,
   },
   local: {
     name: 'local',
@@ -59,6 +69,7 @@ export const ENVIRONMENTS = {
     verifyTls: false,
     latencyBudgetMs: 5000,
     readOnly: false,
+    requiresLiveTarget: true,
   },
   mock: {
     name: 'mock',
@@ -67,6 +78,10 @@ export const ENVIRONMENTS = {
     verifyTls: false,
     latencyBudgetMs: 1000,
     readOnly: false,
+    /* The contract suite stubs at the transport layer, so nothing needs to be
+     * listening here. The URL is retained as the origin stubbed requests are
+     * addressed to. */
+    requiresLiveTarget: false,
   },
   dev: {
     name: 'dev',
@@ -77,6 +92,7 @@ export const ENVIRONMENTS = {
     verifyTls: true,
     latencyBudgetMs: 3000,
     readOnly: false,
+    requiresLiveTarget: true,
   },
   staging: {
     name: 'staging',
@@ -87,6 +103,7 @@ export const ENVIRONMENTS = {
     verifyTls: true,
     latencyBudgetMs: 2000,
     readOnly: false,
+    requiresLiveTarget: true,
   },
   production: {
     name: 'production',
@@ -98,6 +115,7 @@ export const ENVIRONMENTS = {
     latencyBudgetMs: 1500,
     /* Production runs read-only smoke checks; writes are blocked in the client. */
     readOnly: true,
+    requiresLiveTarget: true,
   },
 } as const satisfies Record<string, EnvironmentDefinition>;
 

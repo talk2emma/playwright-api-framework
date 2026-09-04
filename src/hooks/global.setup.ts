@@ -60,6 +60,20 @@ export default async function globalSetup(_playwrightConfig: FullConfig): Promis
  * Only a transport failure stops the run.
  */
 async function verifyReachable(): Promise<void> {
+  /*
+   * Some environments have no server to reach. The contract suite stubs every
+   * response at the transport layer, so probing its nominal origin would fail
+   * on a port nothing was ever meant to listen on — turning a deliberately
+   * offline run into a hard startup error.
+   */
+  if (!config.requiresLiveTarget) {
+    log.info('skipping the reachability probe', {
+      environment: config.env,
+      reason: 'this environment is served by stubs, not by a live target',
+    });
+    return;
+  }
+
   const context = await request.newContext({
     ignoreHTTPSErrors: !config.verifyTls,
     timeout: 15_000,

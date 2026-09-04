@@ -13,22 +13,31 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    # A nightly run against staging catches drift that nobody's branch touched.
+    # A nightly run catches drift that nobody's branch touched — an upstream
+    # API changing a response shape under a suite nobody edited.
     - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
       environment:
         description: Environment to run against
         type: choice
-        options: [dev, staging, production]
-        default: staging
+        # `dev`, `staging` and `production` are placeholder hosts in
+        # src/config/environments.ts. Choosing one without also setting the
+        # API_BASE_URL secret will fail fast in global setup, by design.
+        options: [demo, dev, staging, production]
+        default: demo
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  TEST_ENV: ${{ github.event.inputs.environment || 'staging' }}
+  # `demo` (https://api.restful-api.dev) is the only environment this repository
+  # has a real target for, so it is what every automatic run uses. The named
+  # deployment environments are placeholders — pointing CI at one of those
+  # without an API_BASE_URL secret is what produced
+  # "Cannot reach https://api.staging.example.com" on every push.
+  TEST_ENV: ${{ github.event.inputs.environment || 'demo' }}
   CI: 'true'
 
 jobs:
