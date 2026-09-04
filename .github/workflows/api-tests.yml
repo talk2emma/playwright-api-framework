@@ -47,11 +47,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       # Fails on the first problem, before any test spends time on a network.
       - run: npm run validate
 
@@ -66,11 +62,7 @@ jobs:
         shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
 
       - name: Run the suite
         run: npx playwright test --shard=${{ matrix.shard }}/4
@@ -109,11 +101,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
 
       - uses: actions/download-artifact@v4
         with:
@@ -138,11 +126,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       # Runs against the built-in stub server, so it needs no environment and
       # no secrets — and therefore also runs on a fork's pull request.
       - run: npx playwright test --project=contract
@@ -156,13 +140,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
       # Chromium renders the PDF; nothing else in this job needs a browser.
-      - run: npx playwright install --with-deps chromium
+      - uses: ./.github/actions/setup
+        with:
+          browsers: chromium
       # The build fails when a source file has no documentation entry, which is
       # what stops the documentation drifting behind the code.
       - run: npm run docs
