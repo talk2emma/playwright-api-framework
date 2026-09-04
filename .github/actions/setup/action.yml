@@ -1,0 +1,74 @@
+# ---------------------------------------------------------------------------
+# Node, dependencies and browsers, in the one place every job shares.
+#
+# Installing was 97% of this pipeline's wall time: `npm ci` took three minutes
+# per job while the tests themselves took nine seconds. The npm cache was
+# already hitting, so the cost was not fetching tarballs — it was npm
+# rebuilding node_modules from them, plus an audit round-trip that five
+# parallel jobs made at once (which is why one shard finished its install in
+# 23 seconds and the rest took seven minutes).
+#
+# So this caches the built `node_modules` directory itself, keyed on the
+# lockfile: a hit skips installation and costs about as long as untarring it.
+# The first job in a run populates the cache, and because every other job
+# declares `needs: quality`, they start after it has been saved.
+# ---------------------------------------------------------------------------
+name: Set up Node and dependencies
+description: Restores node_modules (and optionally browsers) from cache, installing only on a miss.
+
+inputs:
+  browsers:
+    description: >
+      Space-separated Playwright browsers to make available, e.g. "chromium".
+      Leave empty for jobs that drive no browser — the API suite talks HTTP
+      directly and needs none.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+        # Still worth keeping: it makes the *miss* path cheaper.
+        cache: npm
+
+    - name: Restore node_modules
+      id: modules
+      uses: actions/cache@v4
+      with:
+        path: node_modules
+        key: ${{ runner.os }}-modules-${{ hashFiles('.nvmrc', 'package-lock.json') }}
+
+    - name: Install dependencies
+      if: steps.modules.outputs.cache-hit != 'true'
+      shell: bash
+      # --no-audit and --fund=false drop two registry round-trips; the audit
+      # one is what made this step vary between 23 seconds and seven minutes.
+      # `timeout` bounds it so a registry stall fails loudly in five minutes
+      # rather than sitting silently until the job timeout.
+      run: timeout 300 npm ci --prefer-offline --no-audit --fund=false
+
+    - name: Restore browsers
+      if: inputs.browsers != ''
+      id: browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        # Keyed on the lockfile because that is what pins the Playwright
+        # version, and the browser build is a function of that version.
+        key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
+    # The binaries are cached; the system libraries are not, because every job
+    # starts on a clean runner. Splitting the two means a cache hit still gets
+    # its apt packages while skipping a ~150MB download.
+    - name: Install browser system dependencies
+      if: inputs.browsers != ''
+      shell: bash
+      run: npx playwright install-deps ${{ inputs.browsers }}
+
+    - name: Install browsers
+      if: inputs.browsers != '' && steps.browsers.outputs.cache-hit != 'true'
+      shell: bash
+      run: npx playwright install ${{ inputs.browsers }}
