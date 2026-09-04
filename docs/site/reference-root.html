@@ -1414,7 +1414,7 @@ trim_trailing_whitespace <span class="tok-o">=</span> <span class="tok-k">false<
 <section class="file" id="f-github-actions-setup-action-yml">
   <header class="file-head">
     <h3><code>.github/actions/setup/action.yml</code></h3>
-    <span class="file-meta">75 lines</span>
+    <span class="file-meta">88 lines</span>
   </header>
   <p class="file-purpose">Node, dependencies and browsers, in the one place every job shares. A composite action so the setup block is written once rather than copied into all five jobs.</p>
   <p>This exists because installing dominated the pipeline. On one measured run <code>npm ci</code> took 421 seconds per job while the tests took 8 — installation was 97% of the wall time, and the suite it was there to run was a rounding error.</p>
@@ -1435,13 +1435,13 @@ trim_trailing_whitespace <span class="tok-o">=</span> <span class="tok-k">false<
 <section class="file" id="f-github-workflows-api-tests-yml">
   <header class="file-head">
     <h3><code>.github/workflows/api-tests.yml</code></h3>
-    <span class="file-meta">157 lines</span>
+    <span class="file-meta">162 lines</span>
   </header>
   <p class="file-purpose">The pipeline: cheap checks first, then the suite split across four shards, then a job that merges the shard reports into one readable result — plus an offline contract job and a documentation build.</p>
   <h3 id="jobs">Jobs</h3>
 <div class="table-wrap"><table><thead><tr><th>Job</th><th>Depends on</th><th>Purpose</th></tr></thead><tbody><tr><td><code>quality</code></td><td>—</td><td><code>npm run validate</code>. Fails in under a minute, before anything touches a network.</td></tr><tr><td><code>test</code></td><td><code>quality</code></td><td>The suite in a 4-way shard matrix, each shard emitting a blob report.</td></tr><tr><td><code>merge-reports</code></td><td><code>test</code> (<code>if: always()</code>)</td><td>One HTML report from four shards. Runs even when a shard failed — especially then.</td></tr><tr><td><code>contract</code></td><td><code>quality</code></td><td>Contract tests against the stub server. No secrets, so it runs on forks too.</td></tr><tr><td><code>docs</code></td><td><code>quality</code></td><td>Rebuilds this documentation. Fails when a source file has no entry.</td></tr></tbody></table></div>
 <h3 id="triggers">Triggers</h3>
-<ul><li>Push to <code>main</code> and every pull request.</li><li>Nightly at 03:00 — catches drift in the target that no branch touched.</li><li>Manual, with an environment picker.</li></ul>
+<ul><li>Push to <code>main</code> and every pull request.</li><li>Nightly at 03:43 — catches drift in the target that no branch touched. Deliberately not on the hour: GitHub delays scheduled runs under load, and the top of the hour is the most contended slot.</li><li>Manual, with an environment picker.</li></ul>
 <h3 id="secrets">Secrets</h3>
 <figure class="code" data-lang="yaml"><figcaption><span>Injected per step, never written to a file</span><span class="lang">YAML</span></figcaption><pre><code><span class="tok-p">env</span>:
 <span class="tok-p">  API_BASE_URL</span>: <span class="tok-v">${{ secrets.API_BASE_URL }}</span>
