@@ -120,6 +120,63 @@ COPY . .`,
     related: ['package.json'],
   },
 
+  '.github/actions/setup/action.yml': {
+    group: 'tooling',
+    purpose:
+      'Node, dependencies and browsers, in the one place every job shares. A composite action so the setup block is written once rather than copied into all five jobs.',
+    blocks: [
+      {
+        type: 'p',
+        text: 'This exists because installing dominated the pipeline. On one measured run `npm ci` took 421 seconds per job while the tests took 8 — installation was 97% of the wall time, and the suite it was there to run was a rounding error.',
+      },
+      {
+        type: 'p',
+        text: 'The npm cache was already hitting, so the cost was not fetching tarballs. It was npm rebuilding `node_modules` from them, plus an audit round-trip that every parallel job made at once. The contention shows in the spread: one shard installed in 23 seconds and the others took seven minutes for identical work.',
+      },
+      { type: 'h3', text: 'What it does' },
+      {
+        type: 'table',
+        head: ['Step', 'Why'],
+        rows: [
+          [
+            'Restore `node_modules`',
+            'Keyed on `.nvmrc` + `package-lock.json`. A hit skips installation entirely and costs about as long as untarring the directory.',
+          ],
+          [
+            'Install on a miss only',
+            '`--prefer-offline --no-audit --fund=false` removes two registry round-trips; `timeout 300` bounds it so a stall fails loudly rather than silently.',
+          ],
+          [
+            'Restore browsers',
+            'Only when the `browsers` input is set. Keyed on the lockfile, because that is what pins the Playwright version the binaries belong to.',
+          ],
+          [
+            '`install-deps` always',
+            'The apt packages are not cached — every job starts on a clean runner — so the system libraries are installed even on a cache hit.',
+          ],
+        ],
+      },
+      {
+        type: 'note',
+        text: 'The job graph is what makes the cache pay: the first job has no dependencies and every other job declares `needs` on it, so the cache is populated before anything else starts. Removing that ordering would put every job back to a cold install.',
+      },
+    ],
+    changeWhen: ['A job needs a browser it currently does not.', 'Installation gets slow again.'],
+    changeHow: [
+      {
+        text: 'Pass the browser through the `browsers` input rather than adding a `playwright install` step to the job. A step outside this action gets no caching.',
+        code: `- uses: ./.github/actions/setup
+  with:
+    browsers: chromium`,
+      },
+      {
+        text: 'If a cache key ever needs to change, change it here once. The key deliberately hashes the lockfile and nothing else about the source, so editing a test never invalidates the dependency cache.',
+      },
+    ],
+    why: 'Five copies of a setup block drift apart. One that every job calls means a caching change is made once and is either right everywhere or wrong everywhere — which is the easier of the two to notice.',
+    related: ['.github/workflows/api-tests.yml', 'package.json'],
+  },
+
   '.github/workflows/api-tests.yml': {
     group: 'tooling',
     purpose:
