@@ -219,7 +219,7 @@ COPY . .`,
         type: 'ul',
         items: [
           'Push to `main` and every pull request.',
-          'Nightly at 03:00 — catches drift in the target that no branch touched.',
+          'Nightly at 03:43 — catches drift in the target that no branch touched. Deliberately not on the hour: GitHub delays scheduled runs under load, and the top of the hour is the most contended slot.',
           'Manual, with an environment picker.',
         ],
       },

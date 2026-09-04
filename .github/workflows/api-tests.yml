@@ -15,7 +15,12 @@ on:
   schedule:
     # A nightly run catches drift that nobody's branch touched — an upstream
     # API changing a response shape under a suite nobody edited.
-    - cron: '0 3 * * *'
+    #
+    # 03:43 rather than 03:00: GitHub queues scheduled workflows on a shared
+    # pool and delays them under load, and the top of the hour is the most
+    # contended slot. Measured here, the 03:00 cron fired at 07:29 and 07:27 on
+    # consecutive days — about four and a half hours late.
+    - cron: '43 3 * * *'
   workflow_dispatch:
     inputs:
       environment:
