@@ -28,7 +28,7 @@
     "typecheck": "tsc --noEmit",
     "validate": "npm run typecheck && npm run lint && npm run format:check",
     "clean": "rimraf test-results reports playwright-report .cache",
-    "prepare": "husky",
+    "prepare": "node -e \"if(!process.env.CI)process.exit(1)\" || husky",
     "docs": "npm run docs:api && npm run docs:html && npm run docs:pdf",
     "docs:api": "node scripts/docs/extract-api.mjs",
     "docs:html": "node scripts/docs/build-docs.mjs",
