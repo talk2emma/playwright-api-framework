@@ -40,6 +40,7 @@ import { test, expect } from '../../src/fixtures';
 import { stubObjectsApi } from '../../src/mocks/objects.stub';
 import { ObjectService } from '../../src/services/object.service';
 import type { OpenApiContract } from '../../src/contracts/openapi';
+import { config } from '../../src/config/env.config';
 
 /**
  * Narrows the optional `contract` fixture.
@@ -169,38 +170,50 @@ test.describe('objects — OpenAPI conformance @contract @objects', () => {
     expect(response).toSatisfyContract(documented(contract));
   });
 
-  test('a response that violates the document is rejected', async ({
-    http,
-    mockServer,
-    contract,
-  }) => {
-    /* A deliberately wrong response, to prove the check has teeth. A
-     * conformance suite that has never failed is a conformance suite nobody
-     * should trust. */
-    mockServer.reset();
-    mockServer.stub({
-      method: 'GET',
-      path: '/objects/*',
-      /* `id` must be a string and is required; here it is a number. */
-      respond: { status: 200, json: { id: 42, name: 'wrong types' } },
+  /*
+   * The automatic contract guard is switched off for this one test.
+   *
+   * The guard throws on any response that fails its registered schema, which
+   * is exactly what this test sets out to produce. Left on, it fires inside
+   * `send()` and the test never reaches the assertion it exists to make — so
+   * the check with the most to prove would be the only one CI could not run.
+   */
+  test.describe('with the automatic guard disabled', () => {
+    test.use({ strictContracts: false });
+
+    test('a response that violates the document is rejected', async ({
+      http,
+      mockServer,
+      contract,
+    }) => {
+      /* A deliberately wrong response, to prove the check has teeth. A
+       * conformance suite that has never failed is a conformance suite nobody
+       * should trust. */
+      mockServer.reset();
+      mockServer.stub({
+        method: 'GET',
+        path: '/objects/*',
+        /* `id` must be a string and is required; here it is a number. */
+        respond: { status: 200, json: { id: 42, name: 'wrong types' } },
+      });
+
+      const response = await http
+        .withBaseUrl(mockServer.url)
+        .get('/objects/1')
+        .expectStatus(200)
+        .as('malformed read')
+        .send();
+
+      const result = documented(contract).validate(
+        'GET',
+        'https://api.restful-api.dev/objects/1',
+        200,
+        response.jsonOrNull(),
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.join(' '), 'the failure must name the offending field').toContain('id');
     });
-
-    const response = await http
-      .withBaseUrl(mockServer.url)
-      .get('/objects/1')
-      .expectStatus(200)
-      .as('malformed read')
-      .send();
-
-    const result = documented(contract).validate(
-      'GET',
-      'https://api.restful-api.dev/objects/1',
-      200,
-      response.jsonOrNull(),
-    );
-
-    expect(result.valid).toBe(false);
-    expect(result.errors.join(' '), 'the failure must name the offending field').toContain('id');
   });
 
   test('contract coverage reports operations the suite never exercised', ({ contract }) => {
@@ -235,6 +248,18 @@ test.describe('objects — OpenAPI conformance @contract @objects', () => {
      * This is the assertion that actually detects drift: the stub can only
      * ever agree with itself.
      */
+    /*
+     * There is nothing to detect drift against when the environment has no
+     * live target. Under `TEST_ENV=mock` the request would not reach a quota
+     * check at all — it would fail at the socket, on a port the offline suite
+     * never intended to use.
+     */
+    test.skip(
+      !config.requiresLiveTarget,
+      `TEST_ENV is "${config.env}", which is served by stubs. Point the contract ` +
+        'project at a live environment to check the document against the real API.',
+    );
+
     const probe = await api.objects.rawFind('1');
 
     test.skip(

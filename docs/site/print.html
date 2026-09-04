@@ -1196,7 +1196,7 @@ body.print details.api > summary {
   <p class="cover-sub">Complete design, file and change-management documentation</p>
   <dl class="cover-meta">
     <div><dt>Version</dt><dd>1.0</dd></div>
-    <div><dt>Generated</dt><dd>2026-09-02</dd></div>
+    <div><dt>Generated</dt><dd>2026-09-04</dd></div>
     <div><dt>Files documented</dt><dd>89</dd></div>
     <div><dt>Exports extracted</dt><dd>150</dd></div>
   </dl>
@@ -1716,7 +1716,7 @@ trim_trailing_whitespace <span class="tok-o">=</span> <span class="tok-k">false<
 <section class="file" id="f-github-workflows-api-tests-yml">
   <header class="file-head">
     <h3><code>.github/workflows/api-tests.yml</code></h3>
-    <span class="file-meta">167 lines</span>
+    <span class="file-meta">176 lines</span>
   </header>
   <p class="file-purpose">The pipeline: cheap checks first, then the suite split across four shards, then a job that merges the shard reports into one readable result — plus an offline contract job and a documentation build.</p>
   <h3 id="jobs">Jobs</h3>
@@ -2039,7 +2039,7 @@ trim_trailing_whitespace <span class="tok-o">=</span> <span class="tok-k">false<
 <section class="file" id="f-src-config-env-config-ts">
   <header class="file-head">
     <h3><code>src/config/env.config.ts</code></h3>
-    <span class="file-meta">221 lines &middot; 5 exports</span>
+    <span class="file-meta">222 lines &middot; 5 exports</span>
   </header>
   <p class="file-purpose">The only file in the framework that reads <code>process.env</code>. It loads the env files, validates everything against a Zod schema, and exports a frozen <code>config</code> object plus <code>getUser(role)</code>.</p>
   <h3 id="what-it-does-in-order">What it does, in order</h3>
@@ -2081,7 +2081,7 @@ trim_trailing_whitespace <span class="tok-o">=</span> <span class="tok-k">false<
 <section class="file" id="f-src-config-environments-ts">
   <header class="file-head">
     <h3><code>src/config/environments.ts</code></h3>
-    <span class="file-meta">141 lines &middot; 5 exports</span>
+    <span class="file-meta">159 lines &middot; 5 exports</span>
   </header>
   <p class="file-purpose">The table of named targets — <code>demo</code>, <code>local</code>, <code>mock</code>, <code>dev</code>, <code>staging</code>, <code>production</code> — holding URLs, path prefixes, TLS behaviour, latency budgets and the read-only flag, plus the public APIs the demonstration suite reaches alongside them.</p>
   <aside class="callout rule"><span class="callout-tag">Rule</span><div>Only non-secret values belong here. Anything that would be dangerous in a pull request — keys, passwords, tokens — is read from the process environment instead. This file is committed and reviewed like any other.</div></aside>
@@ -2112,7 +2112,8 @@ trim_trailing_whitespace <span class="tok-o">=</span> <span class="tok-k">false<
 <span class="tok-k">readonly</span> <span class="tok-p">apiPrefix</span><span class="tok-o">:</span> <span class="tok-t">string</span>;
 <span class="tok-k">readonly</span> <span class="tok-p">verifyTls</span><span class="tok-o">:</span> <span class="tok-t">boolean</span>;
 <span class="tok-k">readonly</span> <span class="tok-p">latencyBudgetMs</span><span class="tok-o">:</span> <span class="tok-t">number</span>;
-<span class="tok-k">readonly</span> <span class="tok-p">readOnly</span><span class="tok-o">:</span> <span class="tok-t">boolean</span>;</code></pre></div><div class="api-item"><div class="api-head"><span class="badge badge-const">const</span><code>ENVIRONMENTS</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-type">type</span><code>EnvironmentName</code></div><pre class="api-shape"><code><span class="tok-k">keyof</span> <span class="tok-k">typeof</span> <span class="tok-t">ENVIRONMENTS</span></code></pre></div><div class="api-item"><div class="api-head"><span class="badge badge-const">const</span><code>PUBLIC_APIS</code></div><p class="api-doc">Additional public APIs the demonstration suite reaches directly. These are *not* environments, because <code>TEST_ENV</code> selects exactly one target and these are used alongside it. A spec reaches them with <code>http.withBaseUrl(PUBLIC_APIS.jsonPlaceholder)</code>, which produces a derived client that keeps the run's observers — latency, recording, contract guard — attached. Each one is here because it demonstrates something the primary target cannot, and for no other reason.</p></div><div class="api-item"><div class="api-head"><span class="badge badge-const">const</span><code>ENVIRONMENT_NAMES</code></div></div></details>
+<span class="tok-k">readonly</span> <span class="tok-p">readOnly</span><span class="tok-o">:</span> <span class="tok-t">boolean</span>;
+<span class="tok-k">readonly</span> <span class="tok-p">requiresLiveTarget</span><span class="tok-o">:</span> <span class="tok-t">boolean</span>;</code></pre></div><div class="api-item"><div class="api-head"><span class="badge badge-const">const</span><code>ENVIRONMENTS</code></div></div><div class="api-item"><div class="api-head"><span class="badge badge-type">type</span><code>EnvironmentName</code></div><pre class="api-shape"><code><span class="tok-k">keyof</span> <span class="tok-k">typeof</span> <span class="tok-t">ENVIRONMENTS</span></code></pre></div><div class="api-item"><div class="api-head"><span class="badge badge-const">const</span><code>PUBLIC_APIS</code></div><p class="api-doc">Additional public APIs the demonstration suite reaches directly. These are *not* environments, because <code>TEST_ENV</code> selects exactly one target and these are used alongside it. A spec reaches them with <code>http.withBaseUrl(PUBLIC_APIS.jsonPlaceholder)</code>, which produces a derived client that keeps the run's observers — latency, recording, contract guard — attached. Each one is here because it demonstrates something the primary target cannot, and for no other reason.</p></div><div class="api-item"><div class="api-head"><span class="badge badge-const">const</span><code>ENVIRONMENT_NAMES</code></div></div></details>
 </section>
 
 <section class="file" id="f-src-config-timeouts-ts">
@@ -2756,7 +2757,7 @@ denied.<span class="tok-f">expectError</span>(<span class="tok-r">/not permitted
 <section class="file" id="f-src-fixtures-api-fixture-ts">
   <header class="file-head">
     <h3><code>src/fixtures/api.fixture.ts</code></h3>
-    <span class="file-meta">361 lines &middot; 1 exports</span>
+    <span class="file-meta">373 lines &middot; 1 exports</span>
   </header>
   <p class="file-purpose">The fixtures every test imports. A test opens with the things it needs and nothing else; everything behind that — building an authenticated client, seeding deterministic data, collecting latency, recording exchanges, deleting what the test created — is set up and torn down here.</p>
   <h3 id="worker-scoped">Worker-scoped</h3>
@@ -2864,7 +2865,7 @@ denied.<span class="tok-f">expectError</span>(<span class="tok-r">/not permitted
 <section class="file" id="f-src-hooks-global-setup-ts">
   <header class="file-head">
     <h3><code>src/hooks/global.setup.ts</code></h3>
-    <span class="file-meta">83 lines &middot; 1 exports</span>
+    <span class="file-meta">97 lines &middot; 1 exports</span>
   </header>
   <p class="file-purpose">Runs once before any test. Its job is to fail fast and loudly when the run cannot possibly succeed.</p>
   <p>A suite that starts against an unreachable environment produces hundreds of confusing connection errors. This turns that into one sentence naming the URL it could not reach.</p>
@@ -3478,7 +3479,7 @@ test.<span class="tok-f">beforeEach</span>(<span class="tok-k">async</span> ({ a
 <section class="file" id="f-tests-contract-objects-openapi-spec-ts">
   <header class="file-head">
     <h3><code>tests/contract/objects.openapi.spec.ts</code></h3>
-    <span class="file-meta">249 lines</span>
+    <span class="file-meta">274 lines</span>
   </header>
   <p class="file-purpose">Validates every response in a lifecycle against the OpenAPI document in <code>src/data/openapi.json</code>, proves the check has teeth, and reports the contract-coverage gap.</p>
   <h3 id="what-this-adds-over-the-zod-schemas">What this adds over the Zod schemas</h3>

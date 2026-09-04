@@ -161,6 +161,7 @@ export const config = Object.freeze({
   /** Base URL for REST calls: the explicit override, else the environment's. */
   baseUrl: (raw.API_BASE_URL ?? environment.apiBaseUrl).replace(/\/+$/, ''),
   apiPrefix: environment.apiPrefix,
+  requiresLiveTarget: environment.requiresLiveTarget,
   graphqlUrl: raw.GRAPHQL_URL ?? environment.graphqlUrl,
   wsUrl: raw.WS_URL ?? environment.wsUrl,
 
